@@ -1,0 +1,9 @@
+services:
+    app.redirect_exception_listener:
+        class: Blixit\MSFBundle\EventListener\MSFRedirectExceptionListener
+        tags:
+            - { name: kernel.event_listener, event: kernel.exception }
+
+    msf:
+        class: Blixit\MSFBundle\Core\MSFService
+        arguments: ['@request_stack','@router', '@form.factory', '@jms_serializer', '@doctrine.orm.entity_manager', '@session']
