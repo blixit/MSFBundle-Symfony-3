@@ -9,6 +9,7 @@
 namespace Blixit\MSFBundle\Form\Type;
 
 
+use Blixit\MSFBundle\Exception\MSFFailedToValidateFormException;
 use Blixit\MSFBundle\Exception\MSFNextPageNotFoundException;
 use Blixit\MSFBundle\Exception\MSFPreviousPageNotFoundException;
 use Blixit\MSFBundle\Exception\MSFRedirectException;
@@ -44,7 +45,10 @@ abstract class MSFFlowType
                     throw new MSFRedirectException($done);
                 return $done;
             }
-        }catch (OutOfBoundsException $e){}
+        }catch (OutOfBoundsException $e){
+        }catch (MSFFailedToValidateFormException $e){
+            return $this->onFailure($e);
+        }
 
         try{
             if($this->getCurrentForm()->get(self::ACTIONS_PREVIOUS)->isClicked()) {
@@ -53,7 +57,10 @@ abstract class MSFFlowType
                     throw new MSFRedirectException($done);
                 return $done;
             }
-        }catch (OutOfBoundsException $e){}
+        }catch (OutOfBoundsException $e){
+        }catch (MSFFailedToValidateFormException $e){
+            return $this->onFailure($e);
+        }
 
         /*
          * For the last one, no need to catch
@@ -75,7 +82,10 @@ abstract class MSFFlowType
                 if ($done instanceof RedirectResponse)
                     throw new MSFRedirectException($done);
             }
-        }catch (OutOfBoundsException $e){}
+        }catch (OutOfBoundsException $e){
+        }catch (MSFFailedToValidateFormException $e){
+            return $this->onFailure($e);
+        }
         return $done;
     }
 
@@ -113,17 +123,18 @@ abstract class MSFFlowType
         $undeserialized = $this->getMsfDataLoader()->getData();
         $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
 
-        //prepare to write local msfDataLoader
-        $dataArray[ $this->getMsfDataLoader()->getState() ] = $this->getCurrentForm()->getData();
-
+        $formData = $this->getCurrentForm()->getData();
 
         try{
-            if( ! $this->onNextValidate($dataArray) ){
-                return false;
-            }
+            $result = $this->onNextValidate($formData) ;
         }catch (\Exception $e){
-            throw new \Exception("The validation method failed on : ".$e->getMessage());
+            throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'validation', $e->getMessage());
+        }finally {
+            if(! $result)
+                throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'validation');
         }
+
+        $dataArray[ $this->getMsfDataLoader()->getState() ] = $formData;
 
         //write local msfDataLoader
         $this->getMsfDataLoader()->setArrayData($dataArray,$this->getSerializer());
@@ -215,7 +226,10 @@ abstract class MSFFlowType
                 if ($done instanceof RedirectResponse)
                     throw new MSFRedirectException($done);
             //}
-        }catch (OutOfBoundsException $e){}
+        }catch (OutOfBoundsException $e){
+        }catch (MSFFailedToValidateFormException $e){
+            return $this->onFailure($e);
+        }
         return $done;
     }
 
@@ -259,20 +273,29 @@ abstract class MSFFlowType
             throw new MSFPreviousPageNotFoundException($this->getMsfDataLoader()->getState());
         }
 
-        if($this->configuration['__on_previous']['save']){
-
-            //$config = $this->getLocalConfiguration();
-            //  validate()
-            //procedure de persistance
+        $formData = $this->getCurrentForm()->getData();
+        $result = false;
+        try{
+            $result = $this->onPreviousValidate($formData) ;
+        }catch (\Exception $e){
+            throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'previous_validation', $e->getMessage());
+        }finally {
+            if(! $result)
+                throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'previous_validation');
         }
 
-        //save the new state
-        $this->getMsfDataLoader()->setState($last);
-        if($this->getMsfDataLoader()->getId())
-            $this->getEntityManager()->merge($this->getMsfDataLoader());
-        else
-            $this->getEntityManager()->persist($this->getMsfDataLoader());
-        $this->getEntityManager()->flush();
+        if($this->configuration['__on_previous']['save']){
+            //Persistance du data loader
+            //save the new state
+            $this->getMsfDataLoader()->setState($last);
+            if($this->getMsfDataLoader()->getId())
+                $this->getEntityManager()->merge($this->getMsfDataLoader());
+            else
+                $this->getEntityManager()->persist($this->getMsfDataLoader());
+            $this->getEntityManager()->flush();
+        }
+
+
 
         //redirect to refresh the page
         return new RedirectResponse( $this->getRequestStack()->getCurrentRequest()->getUri() );
@@ -287,7 +310,10 @@ abstract class MSFFlowType
                 if ($done instanceof RedirectResponse)
                     throw new MSFRedirectException($done);
             }
-        }catch (OutOfBoundsException $e){}
+        }catch (OutOfBoundsException $e){
+        }catch (MSFFailedToValidateFormException $e){
+            return $this->onFailure($e);
+        }
         return $done;
     }
 

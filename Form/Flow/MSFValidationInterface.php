@@ -12,20 +12,26 @@ namespace Blixit\MSFBundle\Form\Flow;
 interface MSFValidationInterface
 {
     /**
-     * @param $dataArray
+     * @param $object
      * @return boolean
      */
-    public function onNextValidate(&$dataArray);
+    public function onNextValidate(&$object);
 
     /**
-     * @param $dataArray
+     * @param $object
      * @return boolean
      */
-    public function onPreviousValidate(&$dataArray);
+    public function onPreviousValidate(&$object);
 
     /**
-     * @param $dataArray
+     * @param $object
      * @return boolean
      */
-    public function onCancelValidate(&$dataArray);
+    public function onCancelValidate(&$object);
+
+    /**
+     * @param \Exception $e
+     * @return mixed
+     */
+    public function onFailure(\Exception $e);
 }

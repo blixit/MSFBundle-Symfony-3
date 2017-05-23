@@ -23,7 +23,7 @@ class DefaultController extends Controller
          * Symfony Form
          */
         $form = $this->createForm(ArticleType::class);
-        $form->handleRequest($request);
+        //$form->handleRequest($request);
 
         if ($form->isSubmitted() && $form->isValid()) {
 

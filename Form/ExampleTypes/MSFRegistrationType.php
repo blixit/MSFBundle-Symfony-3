@@ -37,10 +37,10 @@ class MSFRegistrationType
 
             'defaultState'=>[
                 'entity'    =>  Article::class,
-                //'validation'=> function (&$msfdata){},
+                'validation'=> function (Article &$article){
+                    return true;
+                },
                 'after'     => function ($msfData, Article $article, Serializer $serializer){
-                    //$serialized = json_encode($msfData['username']);
-                    //$user = $serializer->deserialize($serialized, FosUsers::class,'json');
 
                     return 'secondState';
                 },
@@ -48,6 +48,9 @@ class MSFRegistrationType
             'secondState'=>[
                 'entity'    =>  Blog::class,
                 'before'    =>  'defaultState',
+                'previous_validation'    =>  function(Blog &$blog){
+                    return true;
+                },
                 'redirection'    =>  $this->getRouter()->generate('homepage'),
             ]
         ];
