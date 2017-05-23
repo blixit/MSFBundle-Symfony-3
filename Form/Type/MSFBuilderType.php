@@ -35,13 +35,9 @@ abstract class MSFBuilderType
 
         $data = null;
         try{
-            //conversion from json to array
-            $undeserialized = $this->getMsfDataLoader()->getData();
-            $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
-
-            //current form data
-            $datajson = json_encode(isset($dataArray[$state]) ? $dataArray[$state] : []);
-            $data = $this->getSerializer()->deserialize($datajson,$config['entity'], 'json');
+            $undeserialized = $this->getUndeserializedMSFDataLoader();
+            if(array_key_exists($this->getState(), $undeserialized))
+                $data = $data[$this->getState()];
 
         }catch (\Exception $e){
             throw new \Exception($e->getMessage());

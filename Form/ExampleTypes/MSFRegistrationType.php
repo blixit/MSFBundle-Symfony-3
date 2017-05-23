@@ -40,7 +40,7 @@ class MSFRegistrationType
                 'validation'=> function (Article &$article){
                     return true;
                 },
-                'after'     => [BlogType::class,'MSFAfterDefaultState']
+                'after'     => 'secondState'
             ],
             'secondState'=>[
                 'entity'    =>  Blog::class,

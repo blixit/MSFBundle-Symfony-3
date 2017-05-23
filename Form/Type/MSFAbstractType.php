@@ -18,6 +18,7 @@ abstract class MSFAbstractType
     extends MSFBuilderType
     implements MSFValidationInterface
 {
+
     function __construct(MSFService $msf, $defaultState)
     {
         parent::__construct($msf, $defaultState);

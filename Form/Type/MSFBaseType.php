@@ -12,6 +12,7 @@ namespace Blixit\MSFBundle\Form\Type;
 use Blixit\MSFBundle\Core\MSFAssistance;
 use Blixit\MSFBundle\Core\MSFService;
 use Blixit\MSFBundle\Entity\MSFDataLoader;
+use Blixit\MSFBundle\Exception\MSFConfigurationNotFoundException;
 use Symfony\Component\Form\FormInterface;
 use Doctrine\ORM\EntityManager;
 use Symfony\Component\HttpFoundation\RequestStack;
@@ -47,6 +48,12 @@ abstract class MSFBaseType
      * @var MSFDataLoader
      */
     private $msfDataLoader;
+
+    /**
+     * This variable contains the deserialized msfDataLoader to avoid several deserialization of it
+     * @var array
+     */
+    private $undeserializedMSFDataloader;
 
     /**
      * MSFAbstractType constructor.
@@ -107,6 +114,9 @@ abstract class MSFBaseType
         if($this->getSession()->has('__msf_dataloader')){
             $this->msfDataLoader = $this->getSession()->get('__msf_dataloader');
         }
+
+        //Deserialize dataloader
+        $this->getUndeserializedMSFDataLoader();
     }
 
     /**
@@ -203,8 +213,45 @@ abstract class MSFBaseType
             $this->localConfiguration = $this->configuration[$this->msfDataLoader->getState()];
             return $this->localConfiguration;
         }catch (\Exception $e){
-            throw new \LogicException("Trying to access a non configured state");
+            throw new \Exception("Trying to access a non configured state");
         }
+    }
+
+    /**
+     * This function avoids to make multiple calls to serializer when it's useless
+     * @return array of deserialized objects
+     * @throws \Exception
+     */
+    public function getUndeserializedMSFDataLoader(){
+        if(isset($this->undeserializedMSFDataloader)){
+            return $this->undeserializedMSFDataloader;
+        }
+
+        try{
+            //conversion from json to array
+            $undeserialized = $this->getMsfDataLoader()->getData();
+            $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
+
+            foreach ($dataArray as $state => $config){
+                //current form data
+                $datajson = json_encode(isset($dataArray[$state]) ? $dataArray[$state] : []);
+                $this->undeserializedMSFDataloader[$state] = $this->getSerializer()->deserialize($datajson,$this->configuration[$state]['entity'], 'json');
+            }
+
+        }catch (\Exception $e){
+            throw new \Exception("Failed to undeserialize data from Msf Dataloader. \n".$e->getMessage());
+        }
+
+        return $this->undeserializedMSFDataloader;
+    }
+
+    /**
+     * Reset the variable 'undeserializedMSFDataloader' set up in getUndeserializedMSFDataLoader()
+     * @return $this
+     */
+    public function resetUndeserializedMSFDataLoader(){
+        $this->undeserializedMSFDataloader = null;
+        return $this;
     }
 
     /**
@@ -266,6 +313,13 @@ abstract class MSFBaseType
     public function getEntityManager()
     {
         return $this->msf->getEntityManager();
+    }
+
+    /**
+     * @return string
+     */
+    public function getState(){
+        return $this->getMsfDataLoader()->getState();
     }
 
 

@@ -40,10 +40,4 @@ class BlogType extends AbstractType
     {
         return 'blixit_multi_step_formbundle';
     }
-
-    public static function MSFAfterDefaultState($msfData, $blog, $serializer){
-        var_dump($msfData['__state']);
-
-        return 'secondState';
-    }
 }
