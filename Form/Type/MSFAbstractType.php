@@ -10,8 +10,7 @@ namespace Blixit\MSFBundle\Form\Type;
 
 
 use Blixit\MSFBundle\Core\MSFService;
-use Blixit\MSFBundle\Flow\MSFValidationInterface;
-use Blixit\MSFBundle\Form\Builder\MSFBuilderInterface;
+use Blixit\MSFBundle\Form\Flow\MSFValidationInterface;
 
 abstract class MSFAbstractType
     extends MSFBuilderType

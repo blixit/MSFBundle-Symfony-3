@@ -6,7 +6,7 @@
  * Time: 17:53
  */
 
-namespace Blixit\MSFBundle\Flow;
+namespace Blixit\MSFBundle\Form\Flow;
 
 
 interface MSFFlowInterface

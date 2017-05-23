@@ -9,11 +9,10 @@
 namespace Blixit\MSFBundle\Form\Type;
 
 
-use Blixit\MSFBundle\Entity\MSFDataLoader;
 use Blixit\MSFBundle\Exception\MSFNextPageNotFoundException;
 use Blixit\MSFBundle\Exception\MSFPreviousPageNotFoundException;
 use Blixit\MSFBundle\Exception\MSFRedirectException;
-use Blixit\MSFBundle\Flow\MSFFlowInterface;
+use Blixit\MSFBundle\Form\Flow\MSFFlowInterface;
 use Symfony\Component\Debug\Exception\ContextErrorException;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\HttpFoundation\RedirectResponse;

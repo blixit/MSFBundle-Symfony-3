@@ -9,6 +9,7 @@
 namespace Blixit\MSFBundle\Form\Type;
 
 
+use Blixit\MSFBundle\Exception\MSFConfigurationNotFoundException;
 use Blixit\MSFBundle\Form\Builder\MSFBuilderInterface;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 
@@ -16,11 +17,21 @@ abstract class MSFBuilderType
     extends MSFFlowType
     implements MSFBuilderInterface
 {
-
+    /**
+     * Builds the form
+     * - injects loaded data into the form, these data will be erase if a form is submitted
+     * - define http action and method
+     * - default formtype class is looked at this class path
+     * @return \Symfony\Component\Form\FormInterface
+     * @throws \Exception
+     */
     public final function getForm()
     {
         $state = $this->getMsfDataLoader()->getState();
         $config = $this->getLocalConfiguration();
+
+        if(! array_key_exists('entity', $config))
+            throw new MSFConfigurationNotFoundException($this->getMsfDataLoader()->getState(),'entity');
 
         $data = null;
         try{
@@ -34,6 +45,24 @@ abstract class MSFBuilderType
 
         }catch (\Exception $e){
             throw new \Exception($e->getMessage());
+        }
+
+        if(! array_key_exists('action', $config)){
+            $config['action'] = $this->configuration['__root'];
+        }
+
+        if(! array_key_exists('method', $config)){
+            $config['method'] = $this->configuration['__method'];
+        }
+
+        if(! array_key_exists('formtype', $config)){
+            if($this->configuration['__default_formType']){
+                $shortname = (new \ReflectionClass($config['entity']))->getShortName();
+                $defaultNamespace = (new \ReflectionClass(get_class($this)))->getNamespaceName();
+                $config['formtype'] = $defaultNamespace.'\\'.$shortname.'Type';
+            }
+            else
+                throw new MSFConfigurationNotFoundException($this->getMsfDataLoader()->getState(),'formtype');
         }
 
         /**

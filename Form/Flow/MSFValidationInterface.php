@@ -6,7 +6,7 @@
  * Time: 19:43
  */
 
-namespace Blixit\MSFBundle\Flow;
+namespace Blixit\MSFBundle\Form\Flow;
 
 
 interface MSFValidationInterface

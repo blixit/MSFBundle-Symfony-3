@@ -32,13 +32,12 @@ class MSFRegistrationType
     {
         return [
             '__default_paths'=> true,
+            '__default_formType'=> true,
             '__final_redirection'=> $this->getRouter()->generate('homepage'),
 
             'defaultState'=>[
-                'formtype'  =>  ArticleType::class,
                 'entity'    =>  Article::class,
-                'action'    =>  $this->getRouter()->generate('msfbundle'),
-                'method'    =>  'POST',
+                //'validation'=> function (&$msfdata){},
                 'after'     => function ($msfData, Article $article, Serializer $serializer){
                     //$serialized = json_encode($msfData['username']);
                     //$user = $serializer->deserialize($serialized, FosUsers::class,'json');
@@ -47,10 +46,7 @@ class MSFRegistrationType
                 },
             ],
             'secondState'=>[
-                'formtype'  =>  BlogType::class,
                 'entity'    =>  Blog::class,
-                'action'    =>  $this->getRouter()->generate('msfbundle'),
-                'method'    =>  'POST',
                 'before'    =>  'defaultState',
                 'redirection'    =>  $this->getRouter()->generate('homepage'),
             ]

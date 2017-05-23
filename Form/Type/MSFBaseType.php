@@ -60,11 +60,16 @@ abstract class MSFBaseType
 
         //default values
         $this->configuration = [
+            '__method'      => 'POST',
             '__default_paths'      => false,
+            '__default_formType'      => true,
+
             /**
              * Routes
              */
+            //the default route form
             '__root'                => $this->getRequestStack()->getCurrentRequest()->getUri(),
+            //the default route on terminate
             '__final_redirection'   => $this->getRequestStack()->getCurrentRequest()->getUri(),
             '__cancel_route'        => '',
             '__previous_route'      => '',
