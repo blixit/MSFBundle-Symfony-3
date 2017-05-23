@@ -40,10 +40,7 @@ class MSFRegistrationType
                 'validation'=> function (Article &$article){
                     return true;
                 },
-                'after'     => function ($msfData, Article $article, Serializer $serializer){
-
-                    return 'secondState';
-                },
+                'after'     => [BlogType::class,'MSFAfterDefaultState']
             ],
             'secondState'=>[
                 'entity'    =>  Blog::class,
@@ -51,6 +48,7 @@ class MSFRegistrationType
                 'previous_validation'    =>  function(Blog &$blog){
                     return true;
                 },
+                'after'=> null,
                 'redirection'    =>  $this->getRouter()->generate('homepage'),
             ]
         ];
@@ -74,7 +72,6 @@ class MSFRegistrationType
             ])
             ->addPreviousButton([
                 'label'     => 'Retour',
-                //'action'    =>  $this->getRouter()->generate('homepage'),
                 'attr'      => [
                     'class' => 'btn btn-danger'
                 ]

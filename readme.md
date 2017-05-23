@@ -8,9 +8,11 @@ Then, I came to the idea I could create a bundle which let developper interact w
 
 Therefore I created the MSFBundle. It's a little one with currently 5 or 6 classes and works out as a service. Its usage is very similar to form themselves to reduce learning time.
 
+You just need ONE MsfFormType CLASS to go !!
+
 Bonus : with this system, it's easy to manage transitions even between MSF. You just have to configure actions at each step.
 
-## Example of action ##
+## Example of Controller ##
 
 ``` php 
   //using MSF service
@@ -28,6 +30,95 @@ Bonus : with this system, it's easy to manage transitions even between MSF. You 
   return $this->render('MSF/default.html.twig', [
       'form'      => $form->createView()
   ]);
+```
+
+## Example of MSFFormType : MSFRegistrationType ##
+
+``` php 
+<?php
+/**
+ * Created by PhpStorm.
+ * User: blixit
+ * Date: 21/05/17
+ * Time: 17:30
+ */
+
+namespace Blixit\MSFBundle\Form\ExampleTypes;
+
+
+use Blixit\MSFBundle\Core\MSFService;
+use Blixit\MSFBundle\Entity\Example\Article;
+use Blixit\MSFBundle\Entity\Example\Blog;
+use Blixit\MSFBundle\Form\Type\MSFAbstractType;
+use JMS\Serializer\Serializer;
+
+class MSFRegistrationType
+    extends MSFAbstractType
+{
+
+    /**
+     * RegistrationType constructor.
+     * @param MSFService $msf
+     */
+    function __construct(MSFService $msf, $defaultState = 'defaultState')
+    {
+        parent::__construct($msf, $defaultState);
+    }
+
+    public function configure()
+    {
+        return [
+            '__default_paths'=> true,
+            '__default_formType'=> true,
+            '__final_redirection'=> $this->getRouter()->generate('homepage'),
+
+            'defaultState'=>[
+                'entity'    =>  Article::class,
+                'validation'=> function (Article &$article){
+                    return true;
+                },
+                'after'     => function ($msfData, Article $article, Serializer $serializer){
+
+                    return 'secondState';
+                },
+            ],
+            'secondState'=>[
+                'entity'    =>  Blog::class,
+                'before'    =>  'defaultState',
+                'previous_validation'    =>  function(Blog &$blog){
+                    return true;
+                },
+                'redirection'    =>  $this->getRouter()->generate('homepage'),
+            ]
+        ];
+    }
+
+    /**
+     * Modify the form
+     * @return $this
+     */
+    public function buildMSF()
+    {
+        $this->addSubmitButton([
+            'label'     => 'Soumettre'
+        ])
+            ->addCancelButton([
+                'label'     => 'Annuler',
+                'action'    =>  $this->getRouter()->generate('homepage'),
+                'attr'      => [
+                    'class' => 'btn btn-primary'
+                ]
+            ])
+            ->addPreviousButton([
+                'label'     => 'Retour', 
+                'attr'      => [
+                    'class' => 'btn btn-danger'
+                ]
+            ]);
+        return $this;
+    }
+
+}
 ```
 
 ## Dependencies ##

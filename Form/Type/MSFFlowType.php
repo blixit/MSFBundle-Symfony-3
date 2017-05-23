@@ -13,6 +13,7 @@ use Blixit\MSFBundle\Exception\MSFFailedToValidateFormException;
 use Blixit\MSFBundle\Exception\MSFNextPageNotFoundException;
 use Blixit\MSFBundle\Exception\MSFPreviousPageNotFoundException;
 use Blixit\MSFBundle\Exception\MSFRedirectException;
+use Blixit\MSFBundle\Exception\MSFTransitionBadReturnTypeException;
 use Blixit\MSFBundle\Form\Flow\MSFFlowInterface;
 use Symfony\Component\Debug\Exception\ContextErrorException;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
@@ -102,6 +103,8 @@ abstract class MSFFlowType
                 $undeserialized = $this->getMsfDataLoader()->getData();
                 $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
 
+                $dataArray['__state'] = $this->getMsfDataLoader()->getState();
+
                 try{
                     $action = call_user_func($config['cancel'], $dataArray, $this->getCurrentForm()->getData(), $this->getSerializer());
                 }catch (\Exception $e){
@@ -109,6 +112,10 @@ abstract class MSFFlowType
                 }
             }
         }
+
+        if(is_bool($action))
+            throw new MSFTransitionBadReturnTypeException($this->getMsfDataLoader()->getState(),'cancel');
+
         return $action;
     }
 
@@ -254,13 +261,18 @@ abstract class MSFFlowType
                 $undeserialized = $this->getMsfDataLoader()->getData();
                 $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
 
+                $dataArray['__state'] = $this->getMsfDataLoader()->getState();
+
                 try {
                     $action = call_user_func($config['after'], $dataArray, $this->getCurrentForm()->getData(), $this->getSerializer());
                 } catch (\Exception $e) {
-                    throw new \Exception("The " . $this->getMsfDataLoader()->getState() . " 'after callback' raise an exception : \n" . $e->getMessage());
+                    throw new \Exception("The 'after' callback defined on the state '" . $this->getMsfDataLoader()->getState() . "' raised an exception : \n" . $e->getMessage());
                 }
             }
         }
+
+        if(is_bool($action))
+        throw new MSFTransitionBadReturnTypeException($this->getMsfDataLoader()->getState(),'after');
 
         return $action;
     }
@@ -330,6 +342,8 @@ abstract class MSFFlowType
                 $undeserialized = $this->getMsfDataLoader()->getData();
                 $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
 
+                $dataArray['__state'] = $this->getMsfDataLoader()->getState();
+
                 try{
                     $action = call_user_func($config['before'], $dataArray, $this->getCurrentForm()->getData(), $this->getSerializer());
                 }catch (\Exception $e){
@@ -337,6 +351,10 @@ abstract class MSFFlowType
                 }
             }
         }
+
+        if(is_bool($action))
+            throw new MSFTransitionBadReturnTypeException($this->getMsfDataLoader()->getState(),'before');
+
         return $action;
     }
 }
