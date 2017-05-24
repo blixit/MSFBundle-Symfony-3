@@ -93,6 +93,10 @@ abstract class MSFBaseType
             '__on_previous'      => [
                 'save'  => true,
             ],
+            /**
+             * Labels
+             */
+            '__title'   => "MSF Form",
         ];
 
         $this->msfDataLoader = new MSFDataLoader ();

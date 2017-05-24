@@ -168,6 +168,20 @@ abstract class MSFBuilderType
         return $this;
     }
 
+    /**
+     * Return the title of the current MSF Page
+     * @return mixed
+     */
+    public final function getLabel(){
+        $config = $this->getLocalConfiguration();
+
+        if(array_key_exists('label',$config)){
+            return $config['label'];
+        }
+
+        return $this->configuration['__title'];
+    }
+
     private function addButton($name, array $options){
         $this->getCurrentForm()->add($name,SubmitType::class,[
             'label'  => isset($options['label']) ? $options['label'] : 'Button',

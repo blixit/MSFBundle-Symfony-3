@@ -36,11 +36,13 @@ class MSFRegistrationType
             '__final_redirection'=> $this->getRouter()->generate('homepage'),
 
             'defaultState'=>[
+                'label'     => "Ajout d'un article",
                 'entity'    =>  Article::class,
                 'validation'=> [$this,'defaultState_validation_callback'],
                 'after'     => [$this, 'defaultState_after_callback']
             ],
             'secondState'=>[
+                'label'     => "Création du blog",
                 'entity'    =>  Blog::class,
                 'before'    =>  [$this, 'secondState_before_callback'],
                 'previous_validation'    =>  [$this, 'secondState_previous_validation_callback'],
@@ -120,7 +122,7 @@ class MSFRegistrationType
      * @param Blog|null $blog
      * @return string
      */
-    protected function secondState_before_callback($msfData, Blog $blog=null){
+    protected function secondState_before_callback($msfData, Blog $blog){
        // die("dont go back");
 
         return 'defaultState';

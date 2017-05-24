@@ -34,7 +34,8 @@ class DefaultMsfController extends Controller
 
 
         return $this->render('BlixitMultiStepFormBundle:Default:default.html.twig',[
-            'form'  =>  $form->createView()
+            'form'  =>  $form->createView(),
+            'title' => $msf->getLabel()
         ]);
     }
 }

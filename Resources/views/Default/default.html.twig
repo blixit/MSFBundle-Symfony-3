@@ -2,6 +2,7 @@
 
 {% block body %}
     {% if form is defined %}
+        <h1>{{ title }}</h1>
         <div class="jumbotron">
             {{ form_start(form) }}
             {{ form_widget(form) }}
