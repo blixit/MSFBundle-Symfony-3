@@ -9,13 +9,4 @@
             {{ form_end(form) }}
         </div>
     {% endif %}
-
-    {% if form2 is defined %}
-        <div class="jumbotron">
-            {{ form_start(form2) }}
-            {{ form_widget(form2) }}
-            <!--{ { form_row(form2.msf_cancel_action) }}-->
-            {{ form_end(form2) }}
-        </div>
-    {% endif %}
 {% endblock %}

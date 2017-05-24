@@ -79,7 +79,6 @@ abstract class MSFBaseType
             //the default route on terminate
             '__final_redirection'   => $this->getRequestStack()->getCurrentRequest()->getUri(),
             '__cancel_route'        => '',
-            '__previous_route'      => '',
 
             /**
              * Events
@@ -216,6 +215,10 @@ abstract class MSFBaseType
             throw new \Exception("Trying to access a non configured state");
         }
     }
+    public function resetLocalConfiguration(){
+        $this->localConfiguration = null;
+        return $this;
+    }
 
     /**
      * This function avoids to make multiple calls to serializer when it's useless
@@ -227,6 +230,8 @@ abstract class MSFBaseType
             return $this->undeserializedMSFDataloader;
         }
 
+        $this->undeserializedMSFDataloader = [];
+
         try{
             //conversion from json to array
             $undeserialized = $this->getMsfDataLoader()->getData();
@@ -237,7 +242,6 @@ abstract class MSFBaseType
                 $datajson = json_encode(isset($dataArray[$state]) ? $dataArray[$state] : []);
                 $this->undeserializedMSFDataloader[$state] = $this->getSerializer()->deserialize($datajson,$this->configuration[$state]['entity'], 'json');
             }
-
         }catch (\Exception $e){
             throw new \Exception("Failed to undeserialize data from Msf Dataloader. \n".$e->getMessage());
         }

@@ -25,46 +25,49 @@ abstract class MSFAbstractType
     }
 
     /**
-     * @param $formData
-     * @return boolean
+     * @param $msfData
+     * @param object $formData
+     * @return bool
      */
-    public final function onNextValidate(&$formData)
+    public final function onNextValidate($msfData, &$formData)
     {
         $config = $this->getLocalConfiguration();
 
         //execute validation function
         if(array_key_exists('validation',$config))
-            return call_user_func_array($config['validation'],[&$formData]);
+            return call_user_func_array($config['validation'],[$msfData, &$formData]);
 
         return true;
     }
 
     /**
-     * @param $formData
+     * @param $msfData
+     * @param object $formData
      * @return boolean
      */
-    public final function onPreviousValidate(&$formData)
+    public final function onPreviousValidate($msfData, &$formData)
     {
         $config = $this->getLocalConfiguration();
 
         //execute validation function
         if(array_key_exists('previous_validation',$config))
-            return call_user_func_array($config['previous_validation'],[&$formData]);
+            return call_user_func_array($config['previous_validation'],[$msfData, &$formData]);
 
         return true;
     }
 
     /**
-     * @param $formData
+     * @param $msfData
+     * @param object $formData
      * @return boolean
      */
-    public final function onCancelValidate(&$formData)
+    public final function onCancelValidate($msfData, &$formData)
     {
         $config = $this->getLocalConfiguration();
 
         //execute validation function
         if(array_key_exists('cancel_validation',$config))
-            return call_user_func_array($config['cancel_validation'],[&$formData]);
+            return call_user_func_array($config['cancel_validation'],[$msfData, &$formData]);
 
         return true;
     }

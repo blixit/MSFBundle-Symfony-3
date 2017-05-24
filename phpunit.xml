@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<phpunit colors="true">
+    <testsuite name="MSFBundle">
+        <directory>./Tests</directory>
+    </testsuite>
+    <php>
+        <server name="KERNEL_DIR" value="../../../app" />
+    </php>
+</phpunit>

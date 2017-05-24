@@ -127,24 +127,25 @@ abstract class MSFFlowType
     public final function hasNext()
     {
         //read local msfDataLoader
-        $undeserialized = $this->getMsfDataLoader()->getData();
-        $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
+
+        $undeserialized = $this->getUndeserializedMSFDataLoader();
+        //$undeserialized = $this->getMsfDataLoader()->getData();
+        //$dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
 
         $formData = $this->getCurrentForm()->getData();
-
         try{
-            $result = $this->onNextValidate($formData) ;
+            if(! $this->onNextValidate($undeserialized, $formData) )
+                throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'validation');
+
         }catch (\Exception $e){
             throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'validation', $e->getMessage());
-        }finally {
-            if(! $result)
-                throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'validation');
         }
 
-        $dataArray[ $this->getMsfDataLoader()->getState() ] = $formData;
+
+        //$dataArray[ $this->getMsfDataLoader()->getState() ] = $formData;
 
         //write local msfDataLoader
-        $this->getMsfDataLoader()->setArrayData($dataArray,$this->getSerializer());
+        //$this->getMsfDataLoader()->setArrayData($dataArray,$this->getSerializer());
 
 
         $config = $this->getLocalConfiguration();
@@ -261,10 +262,8 @@ abstract class MSFFlowType
                 $undeserialized = $this->getMsfDataLoader()->getData();
                 $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
 
-                $dataArray['__state'] = $this->getMsfDataLoader()->getState();
-
                 try {
-                    $action = call_user_func($config['after'], $dataArray, $this->getCurrentForm()->getData(), $this->getSerializer());
+                    $action = call_user_func($config['after'], $dataArray, $this->getCurrentForm()->getData());
                 } catch (\Exception $e) {
                     throw new \Exception("The 'after' callback defined on the state '" . $this->getMsfDataLoader()->getState() . "' raised an exception : \n" . $e->getMessage());
                 }
@@ -285,15 +284,14 @@ abstract class MSFFlowType
             throw new MSFPreviousPageNotFoundException($this->getMsfDataLoader()->getState());
         }
 
+        $undeserialized = $this->getUndeserializedMSFDataLoader();
         $formData = $this->getCurrentForm()->getData();
-        $result = false;
         try{
-            $result = $this->onPreviousValidate($formData) ;
+            if(! $this->onPreviousValidate($undeserialized, $formData))
+                throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'previous_validation');
+
         }catch (\Exception $e){
             throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'previous_validation', $e->getMessage());
-        }finally {
-            if(! $result)
-                throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'previous_validation');
         }
 
         if($this->configuration['__on_previous']['save']){
@@ -334,7 +332,6 @@ abstract class MSFFlowType
         $config = $this->getLocalConfiguration();
 
         if( ! array_key_exists('before',$config) ){
-            //check also global configuration
             $action = null;
         }else{
             $action = $config['before'];
@@ -342,12 +339,10 @@ abstract class MSFFlowType
                 $undeserialized = $this->getMsfDataLoader()->getData();
                 $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
 
-                $dataArray['__state'] = $this->getMsfDataLoader()->getState();
-
                 try{
-                    $action = call_user_func($config['before'], $dataArray, $this->getCurrentForm()->getData(), $this->getSerializer());
+                    $action = call_user_func($config['before'], $dataArray, $this->getCurrentForm()->getData());
                 }catch (\Exception $e){
-                    throw new \Exception("The ".$this->getMsfDataLoader()->getState()." 'before callback' raise an exception : \n".$e->getMessage() );
+                    throw new \Exception("The 'before' callback defined on the state '".$this->getMsfDataLoader()->getState()."' raised an exception : \n".$e->getMessage() );
                 }
             }
         }

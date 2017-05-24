@@ -11,7 +11,10 @@ namespace Blixit\MSFBundle\Form\Type;
 
 use Blixit\MSFBundle\Exception\MSFConfigurationNotFoundException;
 use Blixit\MSFBundle\Form\Builder\MSFBuilderInterface;
+use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
+use Symfony\Component\Form\FormEvent;
+use Symfony\Component\Form\FormEvents;
 
 abstract class MSFBuilderType
     extends MSFFlowType
@@ -37,7 +40,7 @@ abstract class MSFBuilderType
         try{
             $undeserialized = $this->getUndeserializedMSFDataLoader();
             if(array_key_exists($this->getState(), $undeserialized))
-                $data = $data[$this->getState()];
+                $data = $undeserialized[$this->getState()];
 
         }catch (\Exception $e){
             throw new \Exception($e->getMessage());
@@ -61,21 +64,61 @@ abstract class MSFBuilderType
                 throw new MSFConfigurationNotFoundException($this->getMsfDataLoader()->getState(),'formtype');
         }
 
+        //Adding user fields
+        $this->buildMSF();
+
         /**
          * ici, on pourrait regarder si une fonction init a été fournie. Si oui, utiliser son résultat comme
          * entrée de setcurrentForm()
          */
-        $this->setCurrentForm( $this->getFormFactory()->create(
+        $builderInterface = $this->getFormFactory()->createBuilder(
             $config['formtype'],
             $data,
             [
                 'action'    =>  $config['action'],
                 'method'    =>  $config['method'],
             ]
-        ));
+        );
 
-        //Adding user fields
-        $this->buildMSF();
+        $builderInterface->addEventListener(FormEvents::SUBMIT,function (FormEvent $event){
+
+            $config = $this->getLocalConfiguration();
+            $undeserialized = $this->getUndeserializedMSFDataLoader();
+
+            try{
+                if($event->getForm()->get(self::ACTIONS_PREVIOUS)->isClicked()) {
+                    if(array_key_exists('before',$config) ){
+                        if(is_callable($config['before']))
+                            $action = call_user_func($config['before'], $undeserialized, $event->getData());
+                        else
+                            $action = $config['before'];
+
+                        if(! empty($action)){
+                            $this->configuration[$this->getState()]['before'] = $action;
+                        }
+                    }
+                }
+            }catch (OutOfBoundsException $e){}
+
+        });
+
+        $this->setCurrentForm($builderInterface->getForm() );
+
+        if(isset($this->configuration[$this->getState()]['before'])){
+            //if( $this->addPrevious){
+                $this->addButton(self::ACTIONS_PREVIOUS, $this->configuration['__button_previous']);
+            //}
+        }
+        if(isset($this->configuration[$this->getState()]['cancel'])){
+            //if( $this->addCancel){
+                $this->addButton(self::ACTIONS_CANCEL, $this->configuration['__button_cancel']);
+            //}
+        }
+        if( ! $builderInterface->getForm()->has(self::ACTIONS_SUBMIT)){
+            $this->addButton(self::ACTIONS_SUBMIT, $this->configuration['__button_submit']);
+        }
+
+
 
         return $this->getCurrentForm();
     }
@@ -83,16 +126,13 @@ abstract class MSFBuilderType
 
     public final function addSubmitButton(array $options)
     {
-        $this->getCurrentForm()->add(self::ACTIONS_SUBMIT,SubmitType::class,[
-            'label'  => isset($options['label']) ? $options['label'] : 'Cancel',
-            'attr'  => isset($options['attr']) ? $options['attr'] : []
-        ]);
+        $this->configuration['__button_submit'] = $options;
         return $this;
     }
 
     /**
      * Add cancel button to MSF Form
-     * Add the button unless the action is provided.
+     * Add the button unless the action is provided or a route found in the configuration
      * cancel route is searched in this order
      * - field 'action' in the provided array
      * - field 'cancel' in the local configuration (see the configure method)
@@ -102,53 +142,36 @@ abstract class MSFBuilderType
      */
     public final function addCancelButton(array $options)
     {
-        //cherche dans toutes les configurations existantes
-        if(! array_key_exists('action',$options) ){
-            try{
-                $action = $this->getCancelPage();
-            }catch (\Exception $e){
-                $action = null;
-            }
-        }else
-            $action = $options['action'];
+        $this->configuration['__button_cancel'] = $options;
+        if(array_key_exists('action',$options)){
+            $this->configuration[$this->getState()]['cancel'] = $options['action'];
+            $this->resetLocalConfiguration();
+        }
 
-        if(is_null($action))
-            return $this;
-
-        $this->configuration['__cancel_route'] = $action;
-
-        $this->getCurrentForm()->add(self::ACTIONS_CANCEL,SubmitType::class,[
-            'label'  => isset($options['label']) ? $options['label'] : 'Cancel',
-            'attr'  => isset($options['attr']) ? $options['attr'] : []
-        ]);
         return $this;
     }
 
     /**
-     * Add the button unless the action is provided
+     * Add the button unless the action is provided or a route found in the configuration
+     * If the key 'action' is set, the configuration set in the method configure() will be overwritten.
      * @param array $options
      * @return $this
      */
     public final function addPreviousButton(array $options)
     {
-        if(! array_key_exists('action',$options) ){
-            try{
-                $action = $this->getPreviousPage();
-            }catch (\Exception $e){
-                $action = null;
-            }
-        }else
-            $action = $options['action'];
+        $this->configuration['__button_previous'] = $options;
+        if(array_key_exists('action',$options)) {
+            $this->configuration[$this->getState()]['before'] = $options['action'];
+            $this->resetLocalConfiguration();
+        }
 
-        if(is_null($action))
-            return $this;
+        return $this;
+    }
 
-        $this->configuration['__previous_route'] = $action;
-
-        $this->getCurrentForm()->add(self::ACTIONS_PREVIOUS,SubmitType::class,[
-            'label'  => isset($options['label']) ? $options['label'] : 'Previous',
+    private function addButton($name, array $options){
+        $this->getCurrentForm()->add($name,SubmitType::class,[
+            'label'  => isset($options['label']) ? $options['label'] : 'Button',
             'attr'  => isset($options['attr']) ? $options['attr'] : []
         ]);
-        return $this;
     }
 }
