@@ -100,7 +100,13 @@ class MSFRegistrationType
         return 'secondState';
     }
 
-
+    /**
+     * Callback for validating the 'secondState' state on previous
+     * @param $msfData
+     * @param Blog $blog
+     * @return bool
+     * @throws \Exception
+     */
     protected function secondState_previous_validation_callback($msfData, Blog &$blog){
         if($blog->getTheme() == "blog")
             throw new \Exception("'blog' can't be the theme of the blog");
@@ -108,6 +114,12 @@ class MSFRegistrationType
         return true;
     }
 
+    /**
+     * Callback for transiting to the previous state
+     * @param $msfData
+     * @param Blog|null $blog
+     * @return string
+     */
     protected function secondState_before_callback($msfData, Blog $blog=null){
        // die("dont go back");
 

@@ -32,7 +32,7 @@ Bonus : with this system, it's easy to manage transitions even between MSF. You 
   ]);
 ```
 
-## Example of MSFFormType : MSFRegistrationType ##
+## Example of MSFFormType : MSFRegistrationType with transition callbacks ##
 
 ``` php 
 <?php
@@ -49,8 +49,8 @@ namespace Blixit\MSFBundle\Form\ExampleTypes;
 use Blixit\MSFBundle\Core\MSFService;
 use Blixit\MSFBundle\Entity\Example\Article;
 use Blixit\MSFBundle\Entity\Example\Blog;
+use Blixit\MSFBundle\Exception\MSFFailedToValidateFormException;
 use Blixit\MSFBundle\Form\Type\MSFAbstractType;
-use JMS\Serializer\Serializer;
 
 class MSFRegistrationType
     extends MSFAbstractType
@@ -68,26 +68,20 @@ class MSFRegistrationType
     public function configure()
     {
         return [
-            '__default_paths'=> true,
+            '__default_paths'=> false,
             '__default_formType'=> true,
             '__final_redirection'=> $this->getRouter()->generate('homepage'),
 
             'defaultState'=>[
                 'entity'    =>  Article::class,
-                'validation'=> function (Article &$article){
-                    return true;
-                },
-                'after'     => function ($msfData, Article $article, Serializer $serializer){
-
-                    return 'secondState';
-                },
+                'validation'=> [$this,'defaultState_validation_callback'],
+                'after'     => [$this, 'defaultState_after_callback']
             ],
             'secondState'=>[
                 'entity'    =>  Blog::class,
-                'before'    =>  'defaultState',
-                'previous_validation'    =>  function(Blog &$blog){
-                    return true;
-                },
+                'before'    =>  [$this, 'secondState_before_callback'],
+                'previous_validation'    =>  [$this, 'secondState_previous_validation_callback'],
+                'after'=> null,
                 'redirection'    =>  $this->getRouter()->generate('homepage'),
             ]
         ];
@@ -110,12 +104,62 @@ class MSFRegistrationType
                 ]
             ])
             ->addPreviousButton([
-                'label'     => 'Retour', 
+                'label'     => 'Retour',
+                //'action'    => 'defaultState',
                 'attr'      => [
                     'class' => 'btn btn-danger'
                 ]
             ]);
         return $this;
+    }
+
+    /**
+     * Callback for validating the 'defaultState' state
+     * @param $msfData
+     * @param Article $article
+     * @return bool
+     * @throws \Exception
+     */
+    protected function defaultState_validation_callback($msfData, Article &$article){
+        if($article->getName() == "Blixit")
+            throw new \Exception("Blixit can't be the author");
+
+        return true;
+    }
+
+    /**
+     * Callback for transiting to the next state
+     * @param $msfData
+     * @param Article $article
+     * @return string
+     */
+    protected function defaultState_after_callback($msfData, Article $article){
+        return 'secondState';
+    }
+
+    /**
+     * Callback for validating the 'secondState' state on previous
+     * @param $msfData
+     * @param Blog $blog
+     * @return bool
+     * @throws \Exception
+     */
+    protected function secondState_previous_validation_callback($msfData, Blog &$blog){
+        if($blog->getTheme() == "blog")
+            throw new \Exception("'blog' can't be the theme of the blog");
+
+        return true;
+    }
+
+    /**
+     * Callback for transiting to the previous state
+     * @param $msfData
+     * @param Blog|null $blog
+     * @return string
+     */
+    protected function secondState_before_callback($msfData, Blog $blog=null){
+
+        return 'defaultState';
     }
 
 }
