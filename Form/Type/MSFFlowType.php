@@ -12,6 +12,7 @@ namespace Blixit\MSFBundle\Form\Type;
 use Blixit\MSFBundle\Core\MSFService;
 use Blixit\MSFBundle\Exception\MSFBadStateException;
 use Blixit\MSFBundle\Exception\MSFConfigurationNotFoundException;
+use Blixit\MSFBundle\Exception\MSFPageNotFoundException;
 use Blixit\MSFBundle\Exception\MSFRedirectException;
 use Blixit\MSFBundle\Exception\MSFTransitionBadReturnTypeException;
 use Blixit\MSFBundle\Form\Builder\MSFBuilderInterface;
@@ -59,11 +60,17 @@ abstract class MSFFlowType
 
         if(! is_null($cancelQuery)){
             $action = $this->getCancelPage();
+            if(is_string($action)) {
+                $redirection = $this->getRouteOrUrl('__root',[
+                    '__msf_nvg' => '',
+                    '__msf_state' => $action,
+                ],'?__msf_nvg&__msf_state="'.$action.'"');
 
-            //Execute action if callable or redirect to new state
-            //else global redirect
+            }else{
+                $redirection = $this->getConfiguration()['__on_cancel']['redirection'];
+            }
 
-            throw new MSFRedirectException(new RedirectResponse($this->getConfiguration()['__on_cancel']['redirection']));
+            throw new MSFRedirectException(new RedirectResponse($redirection));
         }
         var_dump($this->getConfiguration());
         die;
@@ -128,56 +135,50 @@ abstract class MSFFlowType
 
         //after
         if(! array_key_exists('after',$config)){
-            $this->getLocalConfiguration()['after'] = null;
+            $this->setLocalConfiguration('after', null);
         }else{
             $action = $this->getLocalConfiguration()['after'];
-            if(is_null($action)){
-                throw new \Exception('Not implemented : is null');
-            }else if(is_string($action)){
-                throw new \Exception('Not implemented : is string');
-            }else if(is_callable($action)){
-                throw new \Exception('Not implemented : is callable');
-            }else{
-                throw new MSFTransitionBadReturnTypeException($this->getState(),'after');
+            if(is_callable($action)){
+                $action = call_user_func($config['after'], $this->getUndeserializedMSFDataLoader() );
             }
+            if(!is_string($action)){
+                $action = null;
+            }
+            $this->setLocalConfiguration('after', $action);
         }
         //before
         if(! array_key_exists('before',$config)){
-            $this->getLocalConfiguration()['before'] = null;
+            $this->setLocalConfiguration('before', null);
         }else{
             $action = $this->getLocalConfiguration()['before'];
-            if(is_null($action)){
-                throw new \Exception('Not implemented : is null');
-            }else if(is_string($action)){
-                throw new \Exception('Not implemented : is string');
-            }else if(is_callable($action)){
-                throw new \Exception('Not implemented : is callable');
-            }else{
-                throw new MSFTransitionBadReturnTypeException($this->getState(),'before');
+            if(is_callable($action)){
+                $action = call_user_func($config['before'], $this->getUndeserializedMSFDataLoader() );
             }
+            if(!is_string($action)){
+                $action = null;
+            }
+            $this->setLocalConfiguration('before', $action);
         }
         //cancel
         if(! array_key_exists('cancel',$config)){
-            $this->getLocalConfiguration()['cancel'] = null;
+            $this->setLocalConfiguration('cancel', null);
         }else{
             $action = $this->getLocalConfiguration()['cancel'];
-            if(is_null($action)){
-                throw new \Exception('Not implemented : is null');
-            }else if(is_string($action)){
-                throw new \Exception('Not implemented : is string');
-            }else if(is_callable($action)){
-                throw new \Exception('Not implemented : is callable');
-            }else{
-                throw new MSFTransitionBadReturnTypeException($this->getState(),'cancel');
+            if(is_callable($action)){
+                $action = call_user_func($config['cancel'], $this->getUndeserializedMSFDataLoader() );
             }
+            if(!is_string($action)){
+                $action = null;
+            }
+            $this->setLocalConfiguration('cancel', $action);
         }
 
         //redirection
         if(! array_key_exists('redirection',$config)) {
             if ($this->getConfiguration()['__default_paths']) {
-                $this->getLocalConfiguration()['redirection'] = $this->getConfiguration()['__final_redirection'];
+                $this->setLocalConfiguration('redirection', $this->getConfiguration()['__final_redirection']);
             } else {
-                $this->getLocalConfiguration()['redirection'] = null;
+                $this->setLocalConfiguration('redirection', null);
             }
         }
         $this->getConfiguration()[$this->getState()] = $this->getLocalConfiguration();
@@ -189,5 +190,16 @@ abstract class MSFFlowType
             return ($this->getDefaultState() == $state);
         }
         return true;
+    }
+
+    public function getRouteOrUrl($key, $parameters=[], $asUrlParameters=''){
+        $keyAsUrl = $key.'AsUrl';
+
+        if(array_key_exists($keyAsUrl,$this->getConfiguration())){
+            $route =  $this->getConfiguration()[$keyAsUrl].$asUrlParameters;
+        }else if(array_key_exists($key,$this->getConfiguration())){
+            $route = $this->getRouter()->generate($this->getConfiguration()[$key],$parameters);
+        }
+        return $route;
     }
 }

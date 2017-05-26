@@ -82,10 +82,9 @@ abstract class MSFBaseType
              * Routes
              */
             //the default route form
-            '__root'                => $this->getRequestStack()->getCurrentRequest()->getUri(),
+            '__root'                => 'bad_root',
             //the default route on terminate
-            '__final_redirection'   => $this->getRequestStack()->getCurrentRequest()->getUri(),
-            '__cancel_route'        => '',
+            //'__final_redirection'   => 'bad_final_redirection',
 
             /**
              * Events
@@ -101,7 +100,7 @@ abstract class MSFBaseType
                 'save'  => true,
             ],
             '__on_cancel'      => [
-                'redirection'  => $this->getRequestStack()->getCurrentRequest()->getUri(),
+                'redirection'  => 'bad_cancel_route',
             ],
             /**
              * Labels
@@ -235,6 +234,13 @@ abstract class MSFBaseType
             throw new \Exception("Trying to access a non configured state");
         }
     }
+
+    public function setLocalConfiguration($key,$value)
+    {
+        $this->configuration[$this->getState()][$key] = $value;
+        $this->resetLocalConfiguration();
+    }
+
     public function resetLocalConfiguration(){
         $this->localConfiguration = null;
         return $this;

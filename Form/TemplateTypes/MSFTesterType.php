@@ -24,10 +24,15 @@ class MSFTesterType
     {
         return [
             '__default_formType_path'=>'\Blixit\MSFBundle\Form\ExampleTypes',
+            '__root'=>'msfbundle',
+            '__on_cancel'=>['redirection'=>$this->getRouter()->generate('msfbundle')],
+
             'blog'  =>  [
                 'entity'    => Blog::class,
-                'cancel'    => true,
-                'before'    => true,
+                'after'    => function($msfData){
+
+                    return 'blog';
+                },
             ]
         ];
     }
