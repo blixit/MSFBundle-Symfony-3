@@ -10,11 +10,10 @@ namespace Blixit\MSFBundle\Form\TemplateTypes;
 
 use Blixit\MSFBundle\Core\MSFService;
 use Blixit\MSFBundle\Entity\Example\Blog;
-use Blixit\MSFBundle\Form\Builder\MSFBuilderInterface;
-use Blixit\MSFBundle\Form\Type\MSFAbstractType;
+use Blixit\MSFBundle\Form\Type\MSFFlowType;
 
 class MSFTesterType
-    extends MSFAbstractType
+    extends MSFFlowType
 {
     function __construct(MSFService $msf, $defaultState)
     {
@@ -26,7 +25,9 @@ class MSFTesterType
         return [
             '__default_formType_path'=>'\Blixit\MSFBundle\Form\ExampleTypes',
             'blog'  =>  [
-                'entity'    => Blog::class
+                'entity'    => Blog::class,
+                'cancel'    => true,
+                'before'    => true,
             ]
         ];
     }
@@ -40,38 +41,4 @@ class MSFTesterType
         // TODO: Implement buildMSF() method.
     }
 
-    public function setCancelPage($page)
-    {
-        // TODO: Implement setCancelPage() method.
-    }
-
-    public function setNextPage($page)
-    {
-        // TODO: Implement setNextPage() method.
-    }
-
-    public function setPreviousPage($page)
-    {
-        // TODO: Implement setPreviousPage() method.
-    }
-
-    public function getSteps()
-    {
-        // TODO: Implement getSteps() method.
-    }
-
-    public function getStepsWithLink()
-    {
-        // TODO: Implement getStepsWithLink() method.
-    }
-
-    public function initTransitions()
-    {
-        // TODO: Implement initTransitions() method.
-    }
-
-    public function isAvailable($state)
-    {
-        // TODO: Implement isAvailable() method.
-    }
 }

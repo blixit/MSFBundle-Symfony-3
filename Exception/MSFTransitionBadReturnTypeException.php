@@ -19,7 +19,7 @@ class MSFTransitionBadReturnTypeException extends \Exception
         \Exception $previousException = null
     ) {
         if(empty($message)){
-            $message = "The transition '".$transition."' found on the '".$state."' configuration should return a name or null. ";
+            $message = "The transition '".$transition."' found on the '".$state."' configuration should return a name or null or a callable.";
         }
         parent::__construct($message, $code, $previousException);
     }

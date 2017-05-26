@@ -12,6 +12,7 @@ namespace Blixit\MSFBundle\Form\Type;
 use Blixit\MSFBundle\Core\MSFAssistance;
 use Blixit\MSFBundle\Core\MSFService;
 use Blixit\MSFBundle\Entity\MSFDataLoader;
+use Blixit\MSFBundle\Exception\MSFBadStateException;
 use Blixit\MSFBundle\Exception\MSFConfigurationNotFoundException;
 use Symfony\Component\Form\FormInterface;
 use Doctrine\ORM\EntityManager;
@@ -56,6 +57,12 @@ abstract class MSFBaseType
     private $undeserializedMSFDataloader;
 
     /**
+     * Tells if the query asks for a new state
+     * @var bool
+     */
+    private $isSetNavigation = false;
+
+    /**
      * MSFAbstractType constructor.
      * @param MSFService $msf
      * @param $defaultState
@@ -93,6 +100,9 @@ abstract class MSFBaseType
             '__on_previous'      => [
                 'save'  => true,
             ],
+            '__on_cancel'      => [
+                'redirection'  => $this->getRequestStack()->getCurrentRequest()->getUri(),
+            ],
             /**
              * Labels
              */
@@ -118,21 +128,6 @@ abstract class MSFBaseType
             $this->msfDataLoader = $this->getSession()->get('__msf_dataloader');
         }
 
-        /**
-         * __msf_nvg = navigate option
-         */
-        $queriedState = $this->getRequestStack()->getCurrentRequest()->get('__msf_nvg');
-        if(! empty($queriedState)){
-            $this->msfDataLoader->setState($queriedState);
-            //force error if the state is not configured
-            $this->getLocalConfiguration();
-        }
-        if(empty($this->getState())){
-            throw new MSFConfigurationNotFoundException($this->getState(),'stateName');
-        }
-
-        //Deserialize dataloader
-        $this->getUndeserializedMSFDataLoader();
     }
 
     /**
@@ -211,6 +206,14 @@ abstract class MSFBaseType
     public function setMsfDataLoader($msfDataLoader)
     {
         $this->msfDataLoader = $msfDataLoader;
+    }
+
+    public function isSetNavigation(){
+        return $this->isSetNavigation;
+    }
+
+    public function setNavigation(){
+        $this->isSetNavigation = true;
     }
 
     /**

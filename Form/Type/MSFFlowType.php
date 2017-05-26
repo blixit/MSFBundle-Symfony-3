@@ -2,353 +2,191 @@
 /**
  * Created by PhpStorm.
  * User: blixit
- * Date: 21/05/17
- * Time: 18:23
+ * Date: 26/05/17
+ * Time: 16:10
  */
 
 namespace Blixit\MSFBundle\Form\Type;
 
 
-use Blixit\MSFBundle\Exception\MSFFailedToValidateFormException;
-use Blixit\MSFBundle\Exception\MSFNextPageNotFoundException;
-use Blixit\MSFBundle\Exception\MSFPreviousPageNotFoundException;
+use Blixit\MSFBundle\Core\MSFService;
+use Blixit\MSFBundle\Exception\MSFBadStateException;
+use Blixit\MSFBundle\Exception\MSFConfigurationNotFoundException;
 use Blixit\MSFBundle\Exception\MSFRedirectException;
 use Blixit\MSFBundle\Exception\MSFTransitionBadReturnTypeException;
+use Blixit\MSFBundle\Form\Builder\MSFBuilderInterface;
 use Blixit\MSFBundle\Form\Flow\MSFFlowInterface;
-use Symfony\Component\Debug\Exception\ContextErrorException;
-use Symfony\Component\Form\Exception\OutOfBoundsException;
+use Symfony\Component\Config\Definition\Exception\Exception;
 use Symfony\Component\HttpFoundation\RedirectResponse;
-use Symfony\Component\Routing\Exception\RouteNotFoundException;
 
 abstract class MSFFlowType
     extends MSFBaseType
     implements MSFFlowInterface
 {
-    const ACTIONS_SUBMIT = 'save'; // default symfony action for submit
-    const ACTIONS_CANCEL = 'msf_cancel_action';
-    const ACTIONS_PREVIOUS = 'msf_previous_action';
-
-    /**
-     * Navigate to the next form, the previous form, cancel or redirect to the set redirection path
-     * @return RedirectResponse
-     * @throws MSFRedirectException
-     */
-    public final function done()
+    function __construct(MSFService $msf, $defaultState)
     {
-        /*
-         * I use to try-catch to catch involuntary OutOfBoundsException errors
-         * For instance, if submit is clicked, get('cancel') and get('previous') will generate errors         *
+        parent::__construct($msf, $defaultState);
+
+
+        /**
+         * __msf_nvg = navigate option
          */
-        try{
-            if($this->getCurrentForm()->get(self::ACTIONS_CANCEL)->isClicked()) {
-                $done = $this->hasCancel();
-                if ($done instanceof RedirectResponse)
-                    throw new MSFRedirectException($done);
-                return $done;
+        $navigationActive = $this->getRequestStack()->getCurrentRequest()->get('__msf_nvg');
+        $queriedState = $this->getRequestStack()->getCurrentRequest()->get('__msf_state');
+        $cancelQuery = $this->getRequestStack()->getCurrentRequest()->get('__msf_cncl');
+
+        if(! is_null($navigationActive)){
+            if(empty($this->getState())){
+                throw new MSFBadStateException($this->getState());
             }
-        }catch (OutOfBoundsException $e){
-        }catch (MSFFailedToValidateFormException $e){
-            return $this->onFailure($e);
-        }
 
-        try{
-            if($this->getCurrentForm()->get(self::ACTIONS_PREVIOUS)->isClicked()) {
-                $done = $this->hasPrevious();
-                if ($done instanceof RedirectResponse)
-                    throw new MSFRedirectException($done);
-                return $done;
-            }
-        }catch (OutOfBoundsException $e){
-        }catch (MSFFailedToValidateFormException $e){
-            return $this->onFailure($e);
-        }
+            $this->getMsfDataLoader()->setState($queriedState);
+            $this->setNavigation();
 
-        /*
-         * For the last one, no need to catch
-         */
-        return $this->next();
-    }
+            //Deserialize dataloader : will throw an error if the new state is not configured
+            $this->getUndeserializedMSFDataLoader();
 
-    public final function hasCancel()
-    {
-        return new RedirectResponse( $this->getRequestStack()->getCurrentRequest()->getUri() );
-    }
+            if( ! $this->isAvailable($this->getState()))
+                throw new MSFBadStateException($this->getState());
 
-    public final function cancel()
-    {
-        $done = null;
-        try{
-            if($this->getCurrentForm()->get(self::ACTIONS_CANCEL)->isClicked()) {
-                $done = $this->hasCancel();
-                if ($done instanceof RedirectResponse)
-                    throw new MSFRedirectException($done);
-            }
-        }catch (OutOfBoundsException $e){
-        }catch (MSFFailedToValidateFormException $e){
-            return $this->onFailure($e);
-        }
-        return $done;
-    }
-
-    public function getCancelPage()
-    {
-        $config = $this->getLocalConfiguration();
-
-        if( ! array_key_exists('cancel',$config) ){
-            $action = null;
-            //$action = $this->configuration['__root'];
         }else{
-            $action = $config['cancel'];
-            if(is_callable($config['cancel'])){
-                $undeserialized = $this->getMsfDataLoader()->getData();
-                $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
 
-                $dataArray['__state'] = $this->getMsfDataLoader()->getState();
-
-                try{
-                    $action = call_user_func($config['cancel'], $dataArray, $this->getCurrentForm()->getData(), $this->getSerializer());
-                }catch (\Exception $e){
-                    throw new \Exception("The ".$this->getMsfDataLoader()->getState()." 'cancel callback' raise an exception : \n".$e->getMessage() );
-                }
-            }
+            //Deserialize dataloader
+            $this->getUndeserializedMSFDataLoader();
         }
 
-        if(is_bool($action))
-            throw new MSFTransitionBadReturnTypeException($this->getMsfDataLoader()->getState(),'cancel');
+        $this->initTransitions();
 
-        return $action;
+        if(! is_null($cancelQuery)){
+            $action = $this->getCancelPage();
+
+            //Execute action if callable or redirect to new state
+            //else global redirect
+
+            throw new MSFRedirectException(new RedirectResponse($this->getConfiguration()['__on_cancel']['redirection']));
+        }
+        var_dump($this->getConfiguration());
+        die;
+
+
+
+
+
     }
 
-
-    /**
-     * @return RedirectResponse
-     * @throws \Exception
-     */
-    public final function hasNext()
+    public final function getCancelPage()
     {
-        //read local msfDataLoader
+        $config = $this->getLocalConfiguration();
+        if(! array_key_exists('cancel',$config))
+            throw new MSFConfigurationNotFoundException($this->getState(),'cancel');
 
-        $undeserialized = $this->getUndeserializedMSFDataLoader();
-        //$undeserialized = $this->getMsfDataLoader()->getData();
-        //$dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
+        return $config['cancel'];
+    }
 
-        $formData = $this->getCurrentForm()->getData();
-        try{
+    public final function setCancelPage($page)
+    {
+        throw new Exception("Not implemented");
+    }
 
-            if(! $this->onNextValidate($undeserialized, $formData) )
-                throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'validation');
+    public final function getNextPage()
+    {
+        throw new Exception("Not implemented");
+    }
 
-        }catch (\Exception $e){
-            throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'validation', $e->getMessage());
-        }
+    public final function setNextPage($page)
+    {
+        throw new Exception("Not implemented");
+    }
 
+    public final function getPreviousPage()
+    {
+        throw new Exception("Not implemented");
+    }
 
-        //$dataArray[ $this->getMsfDataLoader()->getState() ] = $formData;
+    public final function setPreviousPage($page)
+    {
+        throw new Exception("Not implemented");
+    }
 
-        //write local msfDataLoader
-        //$this->getMsfDataLoader()->setArrayData($dataArray,$this->getSerializer());
+    public final function getSteps()
+    {
+        throw new Exception("Not implemented");
+    }
 
+    public final function getStepsWithLink()
+    {
+        throw new Exception("Not implemented");
+    }
 
+    public function initTransitions()
+    {
         $config = $this->getLocalConfiguration();
 
-        $next = $this->getNextPage();
+        /**
+         * If keys don't exist, we look in the default configuration
+         */
 
-        if( $next === null){ //die('NEXT not found');
-            /*
-             * Suppression du MSFDataLoader
-             * En effet, si la dernière étape est validée,
-             */
-            if($this->configuration['__on_terminate']['destroy_data'])
-            {
-                /*
-                 * The msfdataloader entity need to have been loaded by EM to be destroy by it
-                 *
-                 * https://stackoverflow.com/questions/17613684/how-to-determine-if-a-doctrine-entity-is-persisted
-                 * https://stackoverflow.com/questions/13441156/why-there-is-the-need-of-detaching-and-merging-entities-in-a-orm
-                 */
-                if($this->getEntityManager()->contains($this->getMsfDataLoader())) {
-                    //$this->entityManager->detach($this->msfDataLoader);
-                    $this->getEntityManager()->remove($this->getMsfDataLoader());
-                }else{
-                    if($this->getMsfDataLoader()->getId()){
-                        $msfDataLoader = $this->getEntityManager()->getRepository('BlixitMultiStepFormBundle:MSFDataLoader')
-                            ->findOneBy(['id'=>$this->getMsfDataLoader()->getId()]);
-                        $this->setMsfDataLoader($msfDataLoader);
-                        $this->getEntityManager()->remove($this->getMsfDataLoader());
-                        $this->getEntityManager()->flush();
-                    }
-                }
-                //store in session
-                $this->getSession()->remove('__msf_dataloader');
+        //after
+        if(! array_key_exists('after',$config)){
+            $this->getLocalConfiguration()['after'] = null;
+        }else{
+            $action = $this->getLocalConfiguration()['after'];
+            if(is_null($action)){
+                throw new \Exception('Not implemented : is null');
+            }else if(is_string($action)){
+                throw new \Exception('Not implemented : is string');
+            }else if(is_callable($action)){
+                throw new \Exception('Not implemented : is callable');
             }else{
-                //save local data
-                //the current state is the last state
-                if($this->getMsfDataLoader()->getId())
-                    $this->getEntityManager()->merge($this->getMsfDataLoader());
-                else
-                    $this->getEntityManager()->persist($this->getMsfDataLoader());
-                $this->getEntityManager()->flush();
-                //store in session
-                $this->getSession()->set('__msf_dataloader',$this->getMsfDataLoader());
+                throw new MSFTransitionBadReturnTypeException($this->getState(),'after');
             }
-
-            try{
-                return new RedirectResponse( $config['redirection'] );
-            }catch (RouteNotFoundException $e){
-                return new RedirectResponse( $this->configuration['__final_redirection'] );
-            }catch (ContextErrorException $e){
-                if($this->configuration['__default_paths'])
-                    return new RedirectResponse( $this->configuration['__final_redirection'] );
-                else
-                    throw new MSFNextPageNotFoundException($this->getMsfDataLoader()->getState());
-            }
+        }
+        //before
+        if(! array_key_exists('before',$config)){
+            $this->getLocalConfiguration()['before'] = null;
         }else{
-            //save the new state
-            $this->getMsfDataLoader()->setState($next);
-            if($this->getMsfDataLoader()->getId())
-                $this->getEntityManager()->merge($this->getMsfDataLoader());
-            else
-                $this->getEntityManager()->persist($this->getMsfDataLoader());
-            $this->getEntityManager()->flush();
-            //store in session
-            $this->getSession()->set('__msf_dataloader',$this->getMsfDataLoader());
-        }
-
-        //redirect to refresh the page
-        return new RedirectResponse( $this->getRequestStack()->getCurrentRequest()->getUri() );
-    }
-
-
-    /**
-     * @return null
-     * @throws MSFRedirectException
-     */
-    public final function next()
-    {
-        $done = null;
-        try{
-            //This function is called whatever the clicked button. Then, no need to check what button is clicked.
-            //Actually, thanks to the done() method schema, if you click previous or cancel buttons, you won't never reach that fonction
-
-            //if($this->getCurrentForm()->get(self::ACTIONS_SUBMIT)->isClicked()) {
-                $done = $this->hasNext();
-                if ($done instanceof RedirectResponse)
-                    throw new MSFRedirectException($done);
-            //}
-        }catch (OutOfBoundsException $e){
-        }catch (MSFFailedToValidateFormException $e){
-            return $this->onFailure($e);
-        }
-        return $done;
-    }
-
-    /**
-     * This function returns the name of the next form. Its need then to re-compute the result of the 'after' callback to determine
-     * the appropriate transition.
-     * This callback takes as parameter a deserialized copy of the current MSFDataLoader data array representation.
-     * if you call this function inside a controller for instance, you will have to check the array integrity by yourself.
-     * @return mixed|string
-     * @throws \Exception
-     */
-    public function getNextPage()
-    {
-        $config = $this->getLocalConfiguration();
-
-        if( ! array_key_exists('after',$config) ){
-            $action = null;
-        }else {
-            $action = $config['after'];
-            if(is_callable($config['after'])){
-
-                $undeserialized = $this->getMsfDataLoader()->getData();
-                $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
-
-                try {
-                    $action = call_user_func($config['after'], $dataArray, $this->getCurrentForm()->getData());
-                } catch (\Exception $e) {
-                    throw new \Exception("The 'after' callback defined on the state '" . $this->getMsfDataLoader()->getState() . "' raised an exception : \n" . $e->getMessage());
-                }
+            $action = $this->getLocalConfiguration()['before'];
+            if(is_null($action)){
+                throw new \Exception('Not implemented : is null');
+            }else if(is_string($action)){
+                throw new \Exception('Not implemented : is string');
+            }else if(is_callable($action)){
+                throw new \Exception('Not implemented : is callable');
+            }else{
+                throw new MSFTransitionBadReturnTypeException($this->getState(),'before');
             }
         }
-
-        if(is_bool($action))
-        throw new MSFTransitionBadReturnTypeException($this->getMsfDataLoader()->getState(),'after');
-
-        return $action;
-    }
-
-    public final function hasPrevious()
-    {
-        $last = $this->getPreviousPage();
-
-        if($last === null){
-            throw new MSFPreviousPageNotFoundException($this->getMsfDataLoader()->getState());
-        }
-
-        $undeserialized = $this->getUndeserializedMSFDataLoader();
-        $formData = $this->getCurrentForm()->getData();
-        try{
-            if(! $this->onPreviousValidate($undeserialized, $formData))
-                throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'previous_validation');
-
-        }catch (\Exception $e){
-            throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'previous_validation', $e->getMessage());
-        }
-
-        if($this->configuration['__on_previous']['save']){
-            //Persistance du data loader
-            //save the new state
-            $this->getMsfDataLoader()->setState($last);
-            if($this->getMsfDataLoader()->getId())
-                $this->getEntityManager()->merge($this->getMsfDataLoader());
-            else
-                $this->getEntityManager()->persist($this->getMsfDataLoader());
-            $this->getEntityManager()->flush();
-        }
-
-        //redirect to refresh the page
-        return new RedirectResponse( $this->getRequestStack()->getCurrentRequest()->getUri() );
-    }
-
-    public final function previous()
-    {
-        $done = null;
-        try{
-            if($this->getCurrentForm()->get(self::ACTIONS_PREVIOUS)->isClicked()) {
-                $done = $this->hasPrevious();
-                if ($done instanceof RedirectResponse)
-                    throw new MSFRedirectException($done);
-            }
-        }catch (OutOfBoundsException $e){
-        }catch (MSFFailedToValidateFormException $e){
-            return $this->onFailure($e);
-        }
-        return $done;
-    }
-
-    public function getPreviousPage()
-    {
-        $config = $this->getLocalConfiguration();
-
-        if( ! array_key_exists('before',$config) ){
-            $action = null;
+        //cancel
+        if(! array_key_exists('cancel',$config)){
+            $this->getLocalConfiguration()['cancel'] = null;
         }else{
-            $action = $config['before'];
-            if(is_callable($config['before'])){
-                $undeserialized = $this->getMsfDataLoader()->getData();
-                $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
-
-                try{
-                    $action = call_user_func($config['before'], $dataArray, $this->getCurrentForm()->getData());
-                }catch (\Exception $e){
-                    throw new \Exception("The 'before' callback defined on the state '".$this->getMsfDataLoader()->getState()."' raised an exception : \n".$e->getMessage() );
-                }
+            $action = $this->getLocalConfiguration()['cancel'];
+            if(is_null($action)){
+                throw new \Exception('Not implemented : is null');
+            }else if(is_string($action)){
+                throw new \Exception('Not implemented : is string');
+            }else if(is_callable($action)){
+                throw new \Exception('Not implemented : is callable');
+            }else{
+                throw new MSFTransitionBadReturnTypeException($this->getState(),'cancel');
             }
         }
+        //redirection
+        if(! array_key_exists('redirection',$config)) {
+            if ($this->getConfiguration()['__default_paths']) {
+                $this->getLocalConfiguration()['redirection'] = $this->getConfiguration()['__final_redirection'];
+            } else {
+                $this->getLocalConfiguration()['redirection'] = null;
+            }
+        }
+        $this->getConfiguration()[$this->getState()] = $this->getLocalConfiguration();
+    }
 
-        if(is_bool($action))
-            throw new MSFTransitionBadReturnTypeException($this->getMsfDataLoader()->getState(),'before');
-
-        return $action;
+    public final function isAvailable($state)
+    {
+        if (! array_key_exists($state,$this->getUndeserializedMSFDataLoader()) ){
+            return ($this->getDefaultState() == $state);
+        }
+        return true;
     }
 }
