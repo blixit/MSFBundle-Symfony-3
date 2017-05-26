@@ -14,6 +14,7 @@ use Blixit\MSFBundle\Exception\MSFBadStateException;
 use Blixit\MSFBundle\Exception\MSFConfigurationNotFoundException;
 use Blixit\MSFBundle\Exception\MSFPageNotFoundException;
 use Blixit\MSFBundle\Exception\MSFRedirectException;
+use Blixit\MSFBundle\Exception\MSFStateUnreachableException;
 use Blixit\MSFBundle\Exception\MSFTransitionBadReturnTypeException;
 use Blixit\MSFBundle\Form\Builder\MSFBuilderInterface;
 use Blixit\MSFBundle\Form\Flow\MSFFlowInterface;
@@ -48,7 +49,7 @@ abstract class MSFFlowType
             $this->getUndeserializedMSFDataLoader();
 
             if( ! $this->isAvailable($this->getState()))
-                throw new MSFBadStateException($this->getState());
+                throw new MSFStateUnreachableException($this->getState());
 
         }else{
 
@@ -170,48 +171,23 @@ abstract class MSFFlowType
     {
         $config = $this->getLocalConfiguration();
 
-        /**
-         * If keys don't exist, we look in the default configuration
-         */
-
         //after
         if(! array_key_exists('after',$config)){
             $this->setLocalConfiguration('after', null);
         }else{
-            $action = $this->getLocalConfiguration()['after'];
-            if(is_callable($action)){
-                $action = call_user_func($config['after'], $this->getUndeserializedMSFDataLoader() );
-            }
-            if(!is_string($action)){
-                $action = null;
-            }
-            $this->setLocalConfiguration('after', $action);
+            $this->executeTransition('after');
         }
         //before
         if(! array_key_exists('before',$config)){
             $this->setLocalConfiguration('before', null);
         }else{
-            $action = $this->getLocalConfiguration()['before'];
-            if(is_callable($action)){
-                $action = call_user_func($config['before'], $this->getUndeserializedMSFDataLoader() );
-            }
-            if(!is_string($action)){
-                $action = null;
-            }
-            $this->setLocalConfiguration('before', $action);
+            $this->executeTransition('before');
         }
         //cancel
         if(! array_key_exists('cancel',$config)){
             $this->setLocalConfiguration('cancel', null);
         }else{
-            $action = $this->getLocalConfiguration()['cancel'];
-            if(is_callable($action)){
-                $action = call_user_func($config['cancel'], $this->getUndeserializedMSFDataLoader() );
-            }
-            if(!is_string($action)){
-                $action = null;
-            }
-            $this->setLocalConfiguration('cancel', $action);
+            $this->executeTransition('cancel');
         }
 
         //redirection
@@ -243,5 +219,26 @@ abstract class MSFFlowType
             $route = $this->getRouter()->generate($this->getConfiguration()[$key],$parameters);
         }
         return $route;
+    }
+
+    /**
+     * Set transition value be available with the good type (string or null)
+     * If the transition is callable its code is ran
+     * @param $transision
+     * @throws MSFBadStateException
+     */
+    private function executeTransition($transision){
+        $config = $this->getLocalConfiguration();
+        $action = $this->getLocalConfiguration()[$transision];
+
+        if(is_callable($action)){
+            $action = call_user_func($config[$transision], $this->getUndeserializedMSFDataLoader() );
+            if((!is_null($action)) && (! array_key_exists($action,$this->getConfiguration())))
+                throw new MSFBadStateException($action);
+        }
+        if(!is_string($action)){
+            $action = null;
+        }
+        $this->setLocalConfiguration($transision, $action);
     }
 }

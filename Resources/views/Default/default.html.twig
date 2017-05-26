@@ -18,6 +18,17 @@
         {{ form_start(form) }}
         {{ form_widget(form) }}
         <!--{ { form_row(form.msf_cancel_action) }}-->
+            <div class="row inline">
+                {% if buttons.msf_btn_submit is defined %}
+                    <button class="{{ buttons.msf_btn_submit.attr.class }}" type="submit" name="blixit_multi_step_formbundle[save]">{{ buttons.msf_btn_submit.label }}</button>
+                {% endif %}
+                {% if buttons.msf_btn_cancel is defined %}
+                    <button class="{{ buttons.msf_btn_cancel.attr.class }}" type="submit" name="blixit_multi_step_formbundle[msf_cancel_action]">{{ buttons.msf_btn_cancel.label }}</button>
+                {% endif %}
+                {% if buttons.msf_btn_next is defined %}
+                    <button class="{{ buttons.msf_btn_next.attr.class }}" type="submit" name="blixit_multi_step_formbundle[msf_next_action]">{{ buttons.msf_btn_next.label }}</button>
+                {% endif %}
+            </div>
         {{ form_end(form) }}
         </div>
     {% endif %}

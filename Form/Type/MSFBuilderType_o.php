@@ -17,16 +17,10 @@ use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormEvent;
 use Symfony\Component\Form\FormEvents;
 
-abstract class MSFBuilderType
+abstract class MSFBuilderType_o
     extends MSFFlowType
     implements MSFBuilderInterface
 {
-
-    const ACTIONS_SUBMIT = 'save'; // default symfony action for submit
-    const ACTIONS_CANCEL = 'msf_cancel_action';
-    const ACTIONS_NEXT = 'msf_next_action';
-    const ACTIONS_PREVIOUS = 'msf_previous_action';
-
     /**
      * Builds the form
      * - injects loaded data into the form, these data will be erase if a form is submitted
@@ -37,6 +31,7 @@ abstract class MSFBuilderType
      */
     public final function getForm()
     {
+        $state = $this->getMsfDataLoader()->getState();
         $config = $this->getLocalConfiguration();
 
         if(! array_key_exists('entity', $config))
@@ -53,24 +48,24 @@ abstract class MSFBuilderType
         }
 
         if(! array_key_exists('action', $config)){
-            $config['action'] = $this->getConfiguration()['__root'];
+            $config['action'] = $this->configuration['__root'];
         }
 
         if(! array_key_exists('method', $config)){
-            $config['method'] = $this->getConfiguration()['__method'];
+            $config['method'] = $this->configuration['__method'];
         }
 
         if(! array_key_exists('formtype', $config)){
-            if($this->getConfiguration()['__default_formType']){
+            if($this->configuration['__default_formType']){
                 $shortname = (new \ReflectionClass($config['entity']))->getShortName();
                 try{
                     $defaultNamespace = (new \ReflectionClass(get_class($this)))->getNamespaceName();
                     //Force autoload to fail if the form type is not in the Msf type namespace
                     $dontFails = (new \ReflectionClass($defaultNamespace.'\\'.$shortname.'Type'));
                 }catch (\Exception $e){
-                    if(! array_key_exists('__default_formType_path',$this->getConfiguration()))
+                    if(! array_key_exists('__default_formType_path',$this->configuration))
                         throw new \Exception("Use of '__default_formType' requires to put FormType classes into the MSFType classpath or to provide namespace with '__default_formType_path'.");
-                    $defaultNamespace = $this->getConfiguration()['__default_formType_path'];
+                    $defaultNamespace = $this->configuration['__default_formType_path'];
                 }
                 $config['formtype'] = $defaultNamespace.'\\'.$shortname.'Type';
             }
@@ -85,39 +80,52 @@ abstract class MSFBuilderType
          * ici, on pourrait regarder si une fonction init a été fournie. Si oui, utiliser son résultat comme
          * entrée de setcurrentForm()
          */
-        $form = $this->getFormFactory()->createBuilder(
+        $builderInterface = $this->getFormFactory()->createBuilder(
             $config['formtype'],
             $data,
             [
                 'action'    =>  $config['action'],
                 'method'    =>  $config['method'],
             ]
-        )->getForm();
+        );
 
-        $this->setCurrentForm($form);
+        $builderInterface->addEventListener(FormEvents::SUBMIT,function (FormEvent $event){
 
-        if( ! $this->isAvailable($this->getLocalConfiguration()['after'])){
-            /*if(! empty($this->getConfiguration()['msf_btn_next']['active'])){
-                $this->addButton(self::ACTIONS_NEXT, $this->getConfiguration()['msf_btn_next']);
-            }*/
-            $this->getConfiguration()['msf_btn_next']['active'] = false;
-        }
-        if($this->isAvailable($this->getLocalConfiguration()['before'])){
-            /*if(! empty($this->getConfiguration()['msf_btn_previous']['active'])){
-                $this->addButton(self::ACTIONS_PREVIOUS, $this->getConfiguration()['msf_btn_previous']);
-            }*/
-            $this->getConfiguration()['msf_btn_next']['before'] = false;
-        }
-        /*
-        if(array_key_exists('msf_btn_cancel',$this->getConfiguration())){
-            //if( $this->addCancel){
-            $this->addButton(self::ACTIONS_CANCEL, $this->getConfiguration()['msf_btn_cancel']);
+            $config = $this->getLocalConfiguration();
+            $undeserialized = $this->getUndeserializedMSFDataLoader();
+
+            try{
+                if($event->getForm()->get(self::ACTIONS_PREVIOUS)->isClicked()) {
+                    if(array_key_exists('before',$config) ){
+                        if(is_callable($config['before']))
+                            $action = call_user_func($config['before'], $undeserialized, $event->getData());
+                        else
+                            $action = $config['before'];
+
+                        if(! empty($action)){
+                            $this->configuration[$this->getState()]['before'] = $action;
+                        }
+                    }
+                }
+            }catch (OutOfBoundsException $e){}
+
+        });
+
+        $this->setCurrentForm($builderInterface->getForm() );
+
+        if(isset($this->configuration[$this->getState()]['before'])){
+            //if( $this->addPrevious){
+                $this->addButton(self::ACTIONS_PREVIOUS, $this->configuration['__button_previous']);
             //}
         }
-        if(array_key_exists('msf_btn_submit',$this->getConfiguration())){
-            $this->addButton(self::ACTIONS_SUBMIT, $this->getConfiguration()['msf_btn_submit']);
+        if(isset($this->configuration[$this->getState()]['cancel'])){
+            //if( $this->addCancel){
+                $this->addButton(self::ACTIONS_CANCEL, $this->configuration['__button_cancel']);
+            //}
         }
-        */
+        if( ! $builderInterface->getForm()->has(self::ACTIONS_SUBMIT)){
+            $this->addButton(self::ACTIONS_SUBMIT, $this->configuration['__button_submit']);
+        }
 
 
 
@@ -125,10 +133,9 @@ abstract class MSFBuilderType
     }
 
 
-    public final function addSubmitButton(array $options = [])
+    public final function addSubmitButton(array $options)
     {
-        $options['active'] = true;
-        $this->setConfigurationWith('msf_btn_submit', $options);
+        $this->configuration['__button_submit'] = $options;
         return $this;
     }
 
@@ -142,27 +149,14 @@ abstract class MSFBuilderType
      * @param array $options
      * @return $this
      */
-    public final function addCancelButton(array $options = [])
+    public final function addCancelButton(array $options)
     {
-        $options['active'] = true;
-        $this->setConfigurationWith('msf_btn_cancel', $options);
+        $this->configuration['__button_cancel'] = $options;
         if(array_key_exists('action',$options)){
-            $this->setLocalConfiguration('cancel',$options['action']);
+            $this->configuration[$this->getState()]['cancel'] = $options['action'];
+            $this->resetLocalConfiguration();
         }
-        return $this;
-    }
 
-    /**
-     * @param array $options
-     * @return $this
-     */
-    public final function addNextButton(array $options = [])
-    {
-        $options['active'] = true;
-        $this->setConfigurationWith('msf_btn_next', $options);
-        if(array_key_exists('action',$options)){
-            $this->setLocalConfiguration('after',$options['after']);
-        }
         return $this;
     }
 
@@ -172,21 +166,15 @@ abstract class MSFBuilderType
      * @param array $options
      * @return $this
      */
-    public final function addPreviousButton(array $options = [])
+    public final function addPreviousButton(array $options)
     {
-        $options['active'] = true;
-        $this->setConfigurationWith('msf_btn_previous', $options);
-        if(array_key_exists('action',$options)){
-            $this->setLocalConfiguration('before',$options['before']);
+        $this->configuration['__button_previous'] = $options;
+        if(array_key_exists('action',$options)) {
+            $this->configuration[$this->getState()]['before'] = $options['action'];
+            $this->resetLocalConfiguration();
         }
-        return $this;
-    }
 
-    private function addButton($name, array $options){
-        $this->getCurrentForm()->add($name,SubmitType::class,[
-            'label'  => isset($options['label']) ? $options['label'] : 'Button',
-            'attr'  => isset($options['attr']) ? $options['attr'] : []
-        ]);
+        return $this;
     }
 
     /**
@@ -200,14 +188,13 @@ abstract class MSFBuilderType
             return $config['label'];
         }
 
-        return $this->getConfiguration()['__title'];
+        return $this->configuration['__title'];
     }
 
-    public function getButtons(){
-        $tmp = preg_grep("/^msf_btn_/", array_keys($this->getConfiguration()));
-        foreach ($tmp as $item){
-            $tmp[$item] = $this->getConfiguration()[$item];
-        }
-        return $tmp;
+    private function addButton($name, array $options){
+        $this->getCurrentForm()->add($name,SubmitType::class,[
+            'label'  => isset($options['label']) ? $options['label'] : 'Button',
+            'attr'  => isset($options['attr']) ? $options['attr'] : []
+        ]);
     }
 }

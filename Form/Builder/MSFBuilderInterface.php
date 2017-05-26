@@ -19,9 +19,11 @@ interface MSFBuilderInterface
      */
     public function buildMSF();
 
-    public function addSubmitButton(array $options);
+    public function addSubmitButton(array $options = []);
 
-    public function addCancelButton(array $options);
+    public function addCancelButton(array $options = []);
 
-    public function addPreviousButton(array $options);
+    public function addNextButton(array $options = []);
+
+    public function addPreviousButton(array $options = []);
 }

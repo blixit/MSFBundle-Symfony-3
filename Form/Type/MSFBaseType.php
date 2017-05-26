@@ -174,6 +174,10 @@ abstract class MSFBaseType
     {
         $this->configuration = $configuration;
     }
+    public function setConfigurationWith($key, $value)
+    {
+        $this->configuration[$key] = $value;
+    }
 
     /**
      * @return FormInterface

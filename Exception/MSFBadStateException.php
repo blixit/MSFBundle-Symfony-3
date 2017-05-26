@@ -14,10 +14,10 @@ use Throwable;
 class MSFBadStateException
     extends \Exception
 {
-    public function __construct($state='',$message = "This state is not configured.", $code = 0, Throwable $previous = null)
+    public function __construct($state='',$message = "This state is not available.", $code = 0, Throwable $previous = null)
     {
         if( ! empty($state)){
-            $message = "'".$state."' is not a configured state.";
+            $message = "'".$state."' is not an available state.";
         }
         parent::__construct($message, $code, $previous);
     }

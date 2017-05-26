@@ -34,10 +34,9 @@ class DefaultMsfController extends Controller
          * Blixit MSFBundle Form
          */
         $msf = $this->container->get('msf')->create(MSFTesterType::class,"blog");
-
+        $form = $msf->getForm();
 
         /*
-        $form = $msf->getForm();
 
         $form->handleRequest($request);
 
@@ -48,10 +47,12 @@ class DefaultMsfController extends Controller
         }
         */
 
+        //var_dump($request->attributes); die;//->get('_template')->get('bundle')); die;
 
         return $this->render('BlixitMultiStepFormBundle:Default:default.html.twig',[
-            //'form'  =>  $form->createView(),
-            //'title' => $msf->getLabel(),
+            'form'  =>  $form->createView(),
+            'title' => $msf->getLabel(),
+            'buttons' => $msf->getButtons(),
             //'msf_steps'=> $msf->getStepsWithLink('msfbundle',[])
         ]);
     }
