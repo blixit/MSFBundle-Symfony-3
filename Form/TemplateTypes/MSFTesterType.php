@@ -39,4 +39,39 @@ class MSFTesterType
     {
         // TODO: Implement buildMSF() method.
     }
+
+    public function setCancelPage($page)
+    {
+        // TODO: Implement setCancelPage() method.
+    }
+
+    public function setNextPage($page)
+    {
+        // TODO: Implement setNextPage() method.
+    }
+
+    public function setPreviousPage($page)
+    {
+        // TODO: Implement setPreviousPage() method.
+    }
+
+    public function getSteps()
+    {
+        // TODO: Implement getSteps() method.
+    }
+
+    public function getStepsWithLink()
+    {
+        // TODO: Implement getStepsWithLink() method.
+    }
+
+    public function initTransitions()
+    {
+        // TODO: Implement initTransitions() method.
+    }
+
+    public function isAvailable($state)
+    {
+        // TODO: Implement isAvailable() method.
+    }
 }

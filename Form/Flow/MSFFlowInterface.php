@@ -11,28 +11,25 @@ namespace Blixit\MSFBundle\Form\Flow;
 
 interface MSFFlowInterface
 {
-
-    /**
-     * Navigate to the next form, the previous form, cancel or redirect to the set redirection path
-     * @return null
-     */
-    public function done();
-
-    public function hasCancel();
-
-    public function cancel();
-
     public function getCancelPage();
 
-    public function hasNext();
-
-    public function next();
+    public function setCancelPage($page);
 
     public function getNextPage();
 
-    public function hasPrevious();
-
-    public function previous();
+    public function setNextPage($page);
 
     public function getPreviousPage();
+
+    public function setPreviousPage($page);
+
+    public function getSteps();
+
+    public function getStepsWithLink();
+
+    public function initTransitions();
+
+    public function isAvailable($state);
+
+
 }

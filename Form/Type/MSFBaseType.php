@@ -37,7 +37,7 @@ abstract class MSFBaseType
     /**
      * @var array
      */
-    public $configuration;
+    private $configuration;
 
     /**
      * @var FormInterface
