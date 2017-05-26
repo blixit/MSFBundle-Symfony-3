@@ -72,13 +72,6 @@ abstract class MSFFlowType
 
             throw new MSFRedirectException(new RedirectResponse($redirection));
         }
-        var_dump($this->getConfiguration());
-        die;
-
-
-
-
-
     }
 
     public final function getCancelPage()
@@ -92,37 +85,85 @@ abstract class MSFFlowType
 
     public final function setCancelPage($page)
     {
-        throw new Exception("Not implemented");
+        if(! is_string($page))
+            throw new MSFTransitionBadReturnTypeException($this->getState(),'cancel');
+        $this->setLocalConfiguration('cancel',$page);
     }
 
     public final function getNextPage()
     {
-        throw new Exception("Not implemented");
+        $config = $this->getLocalConfiguration();
+        if(! array_key_exists('after',$config))
+            throw new MSFConfigurationNotFoundException($this->getState(),'after');
+
+        return $config['after'];
     }
 
     public final function setNextPage($page)
     {
-        throw new Exception("Not implemented");
+        if(! is_string($page))
+            throw new MSFTransitionBadReturnTypeException($this->getState(),'after');
+        $this->setLocalConfiguration('after',$page);
     }
 
     public final function getPreviousPage()
     {
-        throw new Exception("Not implemented");
+        $config = $this->getLocalConfiguration();
+        if(! array_key_exists('before',$config))
+            throw new MSFConfigurationNotFoundException($this->getState(),'before');
+
+        return $config['before'];
     }
 
     public final function setPreviousPage($page)
     {
-        throw new Exception("Not implemented");
+        if(! is_string($page))
+            throw new MSFTransitionBadReturnTypeException($this->getState(),'before');
+        $this->setLocalConfiguration('before',$page);
     }
 
+    /**
+     * Get names of states
+     * @return array
+     */
     public final function getSteps()
     {
-        throw new Exception("Not implemented");
+        if(isset($this->steps))
+            return $this->steps;
+
+        $tmp = preg_grep("/^[a-zA-Z0-9]/", array_keys($this->getConfiguration()));
+        //we loop to remove bad numerical indexes
+        $this->steps = [];
+        $i = 0;
+        foreach ($tmp as $item) {
+            array_push($this->steps,[
+                'index' =>  $i,
+                'name' =>  $item,
+            ]);
+            $i++;
+        }
+        return $this->steps;
     }
 
-    public final function getStepsWithLink()
+    /**
+     * Get steps with related links
+     * @param $routeName
+     * @param array $parameters
+     * @return mixed
+     */
+    public function getStepsWithLink($routeName, array $parameters)
     {
-        throw new Exception("Not implemented");
+        if(isset($this->stepsWithLink))
+            return $this->stepsWithLink;
+
+        foreach ($this->getSteps() as $key => $step){
+            $parameters['__msf_nvg'] = '';
+            $parameters['__msf_state'] = $step['name'];
+            $this->steps[$key]['link'] = $this->getRouter()->generate($routeName, $parameters);
+        }
+        $this->stepsWithLink = $this->steps;
+        $this->steps = null; // to force reload on getSteps()
+        return $this->stepsWithLink;
     }
 
     public function initTransitions()
@@ -194,6 +235,7 @@ abstract class MSFFlowType
 
     public function getRouteOrUrl($key, $parameters=[], $asUrlParameters=''){
         $keyAsUrl = $key.'AsUrl';
+        $route = null;
 
         if(array_key_exists($keyAsUrl,$this->getConfiguration())){
             $route =  $this->getConfiguration()[$keyAsUrl].$asUrlParameters;

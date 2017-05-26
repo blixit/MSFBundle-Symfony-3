@@ -25,7 +25,7 @@ interface MSFFlowInterface
 
     public function getSteps();
 
-    public function getStepsWithLink();
+    public function getStepsWithLink($routeName, array $parameters);
 
     public function initTransitions();
 
