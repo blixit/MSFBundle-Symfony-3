@@ -171,6 +171,7 @@ abstract class MSFFlowType
                 throw new MSFTransitionBadReturnTypeException($this->getState(),'cancel');
             }
         }
+
         //redirection
         if(! array_key_exists('redirection',$config)) {
             if ($this->getConfiguration()['__default_paths']) {
