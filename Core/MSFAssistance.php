@@ -12,4 +12,6 @@ namespace Blixit\MSFBundle\Core;
 interface MSFAssistance
 {
     public function configure();
+
+    public function init();
 }

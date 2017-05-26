@@ -3,7 +3,6 @@
 namespace Blixit\MSFBundle\Entity;
 
 use Doctrine\ORM\Mapping as ORM;
-use JMS\Serializer\Serializer;
 
 /**
  * MSFDataLoader
@@ -95,11 +94,11 @@ class MSFDataLoader
     /**
      * Set data with an array
      * @param $data
-     * @param Serializer $serializer
+     * @param $serializer
      * @param string $format
      * @return $this
      */
-    public function setArrayData($data, Serializer $serializer, $format = 'json')
+    public function setArrayData($data, $serializer, $format = 'json')
     {
         $this->data = $serializer->serialize($data, $format);
 
@@ -109,11 +108,11 @@ class MSFDataLoader
     /**
      * Set data with an object
      * @param $object
-     * @param Serializer $serializer
+     * @param $serializer
      * @param string $format
      * @return $this
      */
-    public function setObjectData($object, Serializer $serializer, $format = 'json')
+    public function setObjectData($object, $serializer, $format = 'json')
     {
         $this->data = $serializer->serialize($object, $format);
 

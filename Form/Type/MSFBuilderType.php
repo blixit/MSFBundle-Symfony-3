@@ -11,6 +11,7 @@ namespace Blixit\MSFBundle\Form\Type;
 
 use Blixit\MSFBundle\Exception\MSFConfigurationNotFoundException;
 use Blixit\MSFBundle\Form\Builder\MSFBuilderInterface;
+use Symfony\Component\Debug\Exception\ClassNotFoundException;
 use Symfony\Component\Form\Exception\OutOfBoundsException;
 use Symfony\Component\Form\Extension\Core\Type\SubmitType;
 use Symfony\Component\Form\FormEvent;
@@ -57,7 +58,15 @@ abstract class MSFBuilderType
         if(! array_key_exists('formtype', $config)){
             if($this->configuration['__default_formType']){
                 $shortname = (new \ReflectionClass($config['entity']))->getShortName();
-                $defaultNamespace = (new \ReflectionClass(get_class($this)))->getNamespaceName();
+                try{
+                    $defaultNamespace = (new \ReflectionClass(get_class($this)))->getNamespaceName();
+                    //Force autoload to fail if the form type is not in the Msf type namespace
+                    $dontFails = (new \ReflectionClass($defaultNamespace.'\\'.$shortname.'Type'));
+                }catch (\Exception $e){
+                    if(! array_key_exists('__default_formType_path',$this->configuration))
+                        throw new \Exception("Use of '__default_formType' requires to put FormType classes into the MSFType classpath or to provide namespace with '__default_formType_path'.");
+                    $defaultNamespace = $this->configuration['__default_formType_path'];
+                }
                 $config['formtype'] = $defaultNamespace.'\\'.$shortname.'Type';
             }
             else

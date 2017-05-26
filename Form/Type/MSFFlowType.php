@@ -90,7 +90,7 @@ abstract class MSFFlowType
         return $done;
     }
 
-    public final function getCancelPage()
+    public function getCancelPage()
     {
         $config = $this->getLocalConfiguration();
 
@@ -134,6 +134,7 @@ abstract class MSFFlowType
 
         $formData = $this->getCurrentForm()->getData();
         try{
+
             if(! $this->onNextValidate($undeserialized, $formData) )
                 throw new MSFFailedToValidateFormException($this->getMsfDataLoader()->getState(), 'validation');
 
@@ -249,7 +250,7 @@ abstract class MSFFlowType
      * @return mixed|string
      * @throws \Exception
      */
-    public final function getNextPage()
+    public function getNextPage()
     {
         $config = $this->getLocalConfiguration();
 
@@ -305,8 +306,6 @@ abstract class MSFFlowType
             $this->getEntityManager()->flush();
         }
 
-
-
         //redirect to refresh the page
         return new RedirectResponse( $this->getRequestStack()->getCurrentRequest()->getUri() );
     }
@@ -327,7 +326,7 @@ abstract class MSFFlowType
         return $done;
     }
 
-    public final function getPreviousPage()
+    public function getPreviousPage()
     {
         $config = $this->getLocalConfiguration();
 

@@ -6,4 +6,17 @@
     <php>
         <server name="KERNEL_DIR" value="../../../app" />
     </php>
+    <filter>
+        <whitelist processUncoveredFilesFromWhitelist="true">
+            <directory suffix=".php" >./</directory>
+            <exclude>
+                <directory suffix=".php">./Tests</directory>
+                <directory suffix=".php">./DependencyInjection</directory>
+            </exclude>
+        </whitelist>
+    </filter>
+    <logging>
+        <log type="coverage-html" target="coverage" lowUpperBound="10"
+         highLowerBound="50"/>
+    </logging>
 </phpunit>

@@ -118,6 +118,19 @@ abstract class MSFBaseType
             $this->msfDataLoader = $this->getSession()->get('__msf_dataloader');
         }
 
+        /**
+         * __msf_nvg = navigate option
+         */
+        $queriedState = $this->getRequestStack()->getCurrentRequest()->get('__msf_nvg');
+        if(! empty($queriedState)){
+            $this->msfDataLoader->setState($queriedState);
+            //force error if the state is not configured
+            $this->getLocalConfiguration();
+        }
+        if(empty($this->getState())){
+            throw new MSFConfigurationNotFoundException($this->getState(),'stateName');
+        }
+
         //Deserialize dataloader
         $this->getUndeserializedMSFDataLoader();
     }

@@ -1,13 +1,24 @@
 {% extends 'base.html.twig' %}
 
 {% block body %}
+    <!-- Entete -->
+    {% if msf_steps is defined %}
+        <h3>
+        {% for step in msf_steps %}
+                <a href="{{ step.link }}">{{ step.name|capitalize }}</a>{{ msf_steps|length == (step.index+1) ? '' : ' >> ' }}
+        {% endfor %}
+        </h3>
+    {% endif %}
+
+
+    <!-- Formulaire -->
     {% if form is defined %}
         <h1>{{ title }}</h1>
         <div class="jumbotron">
-            {{ form_start(form) }}
-            {{ form_widget(form) }}
-            <!--{ { form_row(form.msf_cancel_action) }}-->
-            {{ form_end(form) }}
+        {{ form_start(form) }}
+        {{ form_widget(form) }}
+        <!--{ { form_row(form.msf_cancel_action) }}-->
+        {{ form_end(form) }}
         </div>
     {% endif %}
 {% endblock %}
