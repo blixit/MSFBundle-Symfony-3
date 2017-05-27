@@ -61,18 +61,23 @@ abstract class MSFFlowType
 
         if(! is_null($cancelQuery)){
             $action = $this->getCancelPage();
-            if(is_string($action)) {
-                $redirection = $this->getRouteOrUrl('__root',[
-                    '__msf_nvg' => '',
-                    '__msf_state' => $action,
-                ],'?__msf_nvg&__msf_state="'.$action.'"');
-
-            }else{
-                $redirection = $this->getConfiguration()['__on_cancel']['redirection'];
-            }
+            $redirection = $this->getCancelRedirectionPage($action);
 
             throw new MSFRedirectException(new RedirectResponse($redirection));
         }
+    }
+
+    public final function getCancelRedirectionPage($action){
+        if(is_string($action)) {
+            $redirection = $this->getRouteOrUrl('__root',[
+                '__msf_nvg' => '',
+                '__msf_state' => $action,
+            ],'?__msf_nvg&__msf_state="'.$action.'"');
+
+        }else{
+            $redirection = $this->getConfiguration()['__on_cancel']['redirection'];
+        }
+        return $redirection;
     }
 
     public final function getCancelPage()
@@ -132,11 +137,13 @@ abstract class MSFFlowType
         if(isset($this->steps))
             return $this->steps;
 
-        $tmp = preg_grep("/^[a-zA-Z0-9]/", array_keys($this->getConfiguration()));
+        $tmp = preg_grep("/(^[a-zA-Z0-9])/", array_keys($this->getConfiguration()));
         //we loop to remove bad numerical indexes
         $this->steps = [];
         $i = 0;
         foreach ($tmp as $item) {
+            if(str_replace("msf_btn","",$item) != $item)
+                continue;
             array_push($this->steps,[
                 'index' =>  $i,
                 'name' =>  $item,
@@ -150,55 +157,114 @@ abstract class MSFFlowType
      * Get steps with related links
      * @param $routeName
      * @param array $parameters
+     * @param bool $buttonsLink
      * @return mixed
+     * @throws MSFConfigurationNotFoundException
      */
-    public function getStepsWithLink($routeName, array $parameters)
+    public function getStepsWithLink($routeName, array $parameters, $buttonsLink = false)
     {
         if(isset($this->stepsWithLink))
             return $this->stepsWithLink;
+        $steps = [];
 
         foreach ($this->getSteps() as $key => $step){
+            $key = $step['name'];
             $parameters['__msf_nvg'] = '';
             $parameters['__msf_state'] = $step['name'];
-            $this->steps[$key]['link'] = $this->getRouter()->generate($routeName, $parameters);
+            $steps[$key]['link'] = $this->getRouter()->generate($routeName, $parameters);
+            if($buttonsLink){
+                if(!empty($this->getConfiguration()[$step['name']]['before']))
+                {
+                    $parameters['__msf_state'] = $this->getConfiguration()[$step['name']]['before'];
+                    $this->executeTransition($parameters['__msf_state'],'before');
+                    $steps[$key]['linkbefore'] = $this->getRouter()->generate($routeName, $parameters);
+                }else{
+                    if($this->getConfiguration()['__default_paths']){
+                        $steps[$key]['linkbefore'] = $this->getConfiguration()['__root'];
+                    }else
+                        throw new MSFConfigurationNotFoundException($step['name'],'before');
+                }
+
+                if(!empty($this->getConfiguration()[$step['name']]['after']))
+                {
+                    $parameters['__msf_state'] = $this->getConfiguration()[$step['name']]['after'];
+                    $this->executeTransition($parameters['__msf_state'],'after');
+                    $steps[$key]['linkafter'] = $this->getRouter()->generate($routeName, $parameters);
+                }else{
+                    if($this->getConfiguration()['__default_paths']){
+                        $steps[$key]['linkbefore'] = $this->getConfiguration()['__final_redirection'];
+                    }else
+                        throw new MSFConfigurationNotFoundException($step['name'],'after');
+                }
+
+                if(!empty($this->getConfiguration()[$step['name']]['cancel']))
+                {
+                    $parameters['__msf_state'] = $this->getConfiguration()[$step['name']]['cancel'];
+                    $this->executeTransition($parameters['__msf_state'],'cancel');
+                    $steps[$key]['linkcancel'] = $this->getRouter()->generate($routeName, $parameters);
+                }else{
+                    if($this->getConfiguration()['__default_paths']){
+                        $steps[$key]['linkcancel'] = $this->getCancelRedirectionPage(null);
+                    }else
+                        throw new MSFConfigurationNotFoundException($step['name'],'cancel');
+                }
+            }
         }
-        $this->stepsWithLink = $this->steps;
-        $this->steps = null; // to force reload on getSteps()
+        $this->stepsWithLink = $steps;
         return $this->stepsWithLink;
     }
 
     public function initTransitions()
     {
-        $config = $this->getLocalConfiguration();
+        foreach ($this->getSteps() as $key => $step){
+            $state = $step['name'];
 
-        //after
-        if(! array_key_exists('after',$config)){
-            $this->setLocalConfiguration('after', null);
-        }else{
-            $this->executeTransition('after');
-        }
-        //before
-        if(! array_key_exists('before',$config)){
-            $this->setLocalConfiguration('before', null);
-        }else{
-            $this->executeTransition('before');
-        }
-        //cancel
-        if(! array_key_exists('cancel',$config)){
-            $this->setLocalConfiguration('cancel', null);
-        }else{
-            $this->executeTransition('cancel');
-        }
-
-        //redirection
-        if(! array_key_exists('redirection',$config)) {
-            if ($this->getConfiguration()['__default_paths']) {
-                $this->setLocalConfiguration('redirection', $this->getConfiguration()['__final_redirection']);
+            //after
+            $config = $this->getConfiguration()[$state];
+            if (!array_key_exists('after', $config)) {
+                //$this->setLocalConfiguration('after', null);
+                $config['after'] = null;
+                $this->setConfigurationWith($state,$config);
             } else {
-                $this->setLocalConfiguration('redirection', null);
+                $this->executeTransition($state,'after');
             }
+
+            //before
+            $config = $this->getConfiguration()[$state];
+            if (!array_key_exists('before', $config)) {
+                //$this->setLocalConfiguration('before', null);
+                $config['before'] = null;
+                $this->setConfigurationWith($state,$config);
+            } else {
+                $this->executeTransition($state,'before');
+            }
+
+            //cancel
+            $config = $this->getConfiguration()[$state];
+            if (!array_key_exists('cancel', $config)) {
+                //$this->setLocalConfiguration('cancel', null);
+                $config['cancel'] = null;
+                $this->setConfigurationWith($state,$config);
+            } else {
+                $this->executeTransition($state,'cancel');
+            }
+
+            //redirection
+            $config = $this->getConfiguration()[$state];
+            if (!array_key_exists('redirection', $config)) {
+                if ($this->getConfiguration()['__default_paths']) {
+                    //$this->setLocalConfiguration('redirection', $this->getConfiguration()['__final_redirection']);
+                    $config['redirection'] = $this->getConfiguration()['__final_redirection'];
+                    $this->setConfigurationWith($state,$config);
+                } else {
+                    //$this->setLocalConfiguration('redirection', null);
+                    $config['redirection'] = null;
+                    $this->setConfigurationWith($state,$config);
+                }
+            }
+
+            //$this->getConfiguration()[$this->getState()] = $this->getLocalConfiguration();
         }
-        $this->getConfiguration()[$this->getState()] = $this->getLocalConfiguration();
     }
 
     public final function isAvailable($state)
@@ -224,21 +290,24 @@ abstract class MSFFlowType
     /**
      * Set transition value be available with the good type (string or null)
      * If the transition is callable its code is ran
-     * @param $transision
+     * @param $state
+     * @param $transition
      * @throws MSFBadStateException
      */
-    private function executeTransition($transision){
-        $config = $this->getLocalConfiguration();
-        $action = $this->getLocalConfiguration()[$transision];
+    private function executeTransition($state,$transition){
+
+        $config = $this->getConfiguration()[$state];
+        $action = $config[$transition];
 
         if(is_callable($action)){
-            $action = call_user_func($config[$transision], $this->getUndeserializedMSFDataLoader() );
+            $action = call_user_func($action, $this->getUndeserializedMSFDataLoader() );
             if((!is_null($action)) && (! array_key_exists($action,$this->getConfiguration())))
                 throw new MSFBadStateException($action);
         }
         if(!is_string($action)){
             $action = null;
         }
-        $this->setLocalConfiguration($transision, $action);
+        $config[$transition] = $action;
+        $this->setConfigurationWith($state, $config);
     }
 }

@@ -23,9 +23,9 @@ abstract class MSFBuilderType
 {
 
     const ACTIONS_SUBMIT = 'save'; // default symfony action for submit
-    const ACTIONS_CANCEL = 'msf_cancel_action';
-    const ACTIONS_NEXT = 'msf_next_action';
-    const ACTIONS_PREVIOUS = 'msf_previous_action';
+    const ACTIONS_CANCEL = 'msf_btn_cancel';
+    const ACTIONS_NEXT = 'msf_btn_next';
+    const ACTIONS_PREVIOUS = 'msf_btn_previous';
 
     /**
      * Builds the form
@@ -100,13 +100,17 @@ abstract class MSFBuilderType
             /*if(! empty($this->getConfiguration()['msf_btn_next']['active'])){
                 $this->addButton(self::ACTIONS_NEXT, $this->getConfiguration()['msf_btn_next']);
             }*/
-            $this->getConfiguration()['msf_btn_next']['active'] = false;
+            $conf = $this->getConfiguration()[self::ACTIONS_NEXT];
+            $conf['active'] = false;
+            $this->setConfigurationWith(self::ACTIONS_NEXT,$conf);
         }
-        if($this->isAvailable($this->getLocalConfiguration()['before'])){
+        if( ! $this->isAvailable($this->getLocalConfiguration()['before'])){
             /*if(! empty($this->getConfiguration()['msf_btn_previous']['active'])){
                 $this->addButton(self::ACTIONS_PREVIOUS, $this->getConfiguration()['msf_btn_previous']);
             }*/
-            $this->getConfiguration()['msf_btn_next']['before'] = false;
+            $conf = $this->getConfiguration()[self::ACTIONS_PREVIOUS];
+            $conf['active'] = false;
+            $this->setConfigurationWith(self::ACTIONS_PREVIOUS,$conf);
         }
         /*
         if(array_key_exists('msf_btn_cancel',$this->getConfiguration())){
@@ -205,8 +209,19 @@ abstract class MSFBuilderType
 
     public function getButtons(){
         $tmp = preg_grep("/^msf_btn_/", array_keys($this->getConfiguration()));
+        if(empty($this->getConfiguration()['__root']))
+            throw new MSFConfigurationNotFoundException('','',"GetButtons() requires '__root' parameter. ");
+
+        $stepsLinks = $this->getStepsWithLink($this->getConfiguration()['__root'],[],true);
+
         foreach ($tmp as $item){
             $tmp[$item] = $this->getConfiguration()[$item];
+            if($item == self::ACTIONS_CANCEL)
+                $tmp[$item]['link'] = $stepsLinks[$this->getState()]['linkcancel'];
+            if($item == self::ACTIONS_PREVIOUS)
+                $tmp[$item]['link'] = $stepsLinks[$this->getState()]['linkbefore'];
+            if($item == self::ACTIONS_NEXT)
+                $tmp[$item]['link'] = $stepsLinks[$this->getState()]['linkafter'];
         }
         return $tmp;
     }

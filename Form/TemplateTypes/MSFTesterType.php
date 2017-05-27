@@ -24,25 +24,27 @@ class MSFTesterType
     public function configure()
     {
         return [
+            '__default_paths'=>true,
             '__default_formType_path'=>'\Blixit\MSFBundle\Form\ExampleTypes',
             '__root'=>'msfbundle',
+            '__final_redirection'=>'msfbundle',
             '__on_cancel'=>['redirection'=>$this->getRouter()->generate('msfbundle')],
 
             'blog'  =>  [
-                'label'=> "Blog",
+                'label'=> "State 1",
                 'entity'    => Blog::class,
                 'after'    => function($msfData){
 
                     return 'go';
                 },
-                'before'    => 'blog'
+                'before'    => 'blog',
             ],
             'go'  =>  [
                 'label'=> "Go",
                 'entity'    => Blog::class,
                 'after'    => function($msfData){
 
-                    return 'go';
+                    return null;
                 },
                 'before'    => 'blog'
             ]
