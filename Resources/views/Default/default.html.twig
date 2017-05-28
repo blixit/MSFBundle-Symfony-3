@@ -2,11 +2,13 @@
 
 {% block body %}
     <!-- Entete -->
-    {% if msf_steps is defined %}
+    {% if menu is defined %}
         <h3>
-        {% for step in msf_steps %}
-                <a href="{{ step.link }}">{{ step.name|capitalize }}</a>{{ msf_steps|length == (step.index+1) ? '' : ' >> ' }}
-        {% endfor %}
+            {% set i = 0 %}
+            {% for step in menu %}
+                <a href="{{ step.link }}">{{ step.name|capitalize }}</a>{{ menu|length == (i+1) ? '' : ' >> ' }}
+                {% set i = i + 1 %}
+            {% endfor %}
         </h3>
     {% endif %}
 

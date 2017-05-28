@@ -2,13 +2,6 @@
 
 namespace Blixit\MSFBundle\Controller;
 
-use Blixit\MSFBundle\Entity\Example\Blog;
-use Blixit\MSFBundle\Entity\MSFDataLoader;
-use Blixit\MSFBundle\Exception\MSFPreviousPageNotFoundException;
-use Blixit\MSFBundle\Form\ExampleTypes\ArticleType;
-use Blixit\MSFBundle\Form\ExampleTypes\MSFRegistrationLinearType;
-use Blixit\MSFBundle\Form\ExampleTypes\MSFRegistrationType;
-use Blixit\MSFBundle\Form\TemplateTypes\MSFLinearType;
 use Blixit\MSFBundle\Form\TemplateTypes\MSFTesterType;
 use Symfony\Bundle\FrameworkBundle\Controller\Controller;
 use Symfony\Component\HttpFoundation\Request;
