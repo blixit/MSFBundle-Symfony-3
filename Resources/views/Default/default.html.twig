@@ -20,17 +20,16 @@
         <!--{ { form_row(form.msf_cancel_action) }}-->
             <div class="row inline">
                 {% if buttons.msf_btn_submit is defined %}
-                    <button class="{{ buttons.msf_btn_submit.attr.class }}" type="submit" name="blixit_multi_step_formbundle[save]">{{ buttons.msf_btn_submit.label }}</button>
+                    <button class="{{ buttons.msf_btn_submit.attr.class }}" type="submit" name="msf_btn_submit">{{ buttons.msf_btn_submit.label }}</button>
                 {% endif %}
                 {% if buttons.msf_btn_cancel is defined %}
-                {% if buttons.msf_btn_cancel.active %}
-                    <a href="{{ buttons.msf_btn_cancel.link }}" class="{{ buttons.msf_btn_cancel.attr.class }}" name="blixit_multi_step_formbundle[msf_cancel_action]">{{ buttons.msf_btn_cancel.label }}</a>
-                {% endif %}
+                    <a href="{{ buttons.msf_btn_cancel.link }}" class="{{ buttons.msf_btn_cancel.attr.class }}" >{{ buttons.msf_btn_cancel.label }}</a>
                 {% endif %}
                 {% if buttons.msf_btn_next is defined %}
-                {% if buttons.msf_btn_next.active %}
-                        <a href="{{ buttons.msf_btn_next.link }}" class="{{ buttons.msf_btn_next.attr.class }}" name="blixit_multi_step_formbundle[msf_next_action]">{{ buttons.msf_btn_next.label }}</a>
+                        <a href="{{ buttons.msf_btn_next.link }}" class="{{ buttons.msf_btn_next.attr.class }}" >{{ buttons.msf_btn_next.label }}</a>
                 {% endif %}
+                {% if buttons.msf_btn_previous is defined %}
+                        <a href="{{ buttons.msf_btn_previous.link }}" class="{{ buttons.msf_btn_previous.attr.class }}" >{{ buttons.msf_btn_previous.label }}</a>
                 {% endif %}
             </div>
         {{ form_end(form) }}
@@ -41,7 +40,7 @@
     {% if msf_time is defined %}
         <div>
             {% set ms = msf_time*1000 %}
-            Généré en {{ ms }} ms
+            MSF Form généré en {{ ms }} ms.
         </div>
     {% endif %}
 {% endblock %}

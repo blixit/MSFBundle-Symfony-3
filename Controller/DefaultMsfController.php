@@ -26,6 +26,7 @@ class DefaultMsfController extends Controller
         $jms = $this->container->get('jms_serializer');
         $session = $this->container->get('session');
 
+
         //$session->remove('__msf_dataloader');
         //$session->save();
 
@@ -39,16 +40,15 @@ class DefaultMsfController extends Controller
         $title = $msf->getLabel();
         $buttons = $msf->getButtons();
         $time = microtime() - $time;
-        /*
+
 
         $form->handleRequest($request);
 
         if($form->isSubmitted() && $form->isValid() ) {
-
-            //$msf->previous() ;
-            $msf->next() ;
+            $msf->done() ;
+            //die;
         }
-        */
+
 
         //var_dump($request->attributes); die;//->get('_template')->get('bundle')); die;
 

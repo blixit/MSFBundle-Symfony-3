@@ -9,28 +9,22 @@
 namespace Blixit\MSFBundle\Form\Flow;
 
 
+use Symfony\Component\HttpFoundation\RedirectResponse;
+
 interface MSFValidationInterface
 {
     /**
-     * @param $msfData
-     * @param $object
-     * @return bool
+     * @param string $userRoute
+     * @return null
      */
-    public function onNextValidate($msfData, &$object);
+    public function done($userRoute = '');
 
     /**
      * @param $msfData
      * @param $object
      * @return bool
      */
-    public function onPreviousValidate($msfData, &$object);
-
-    /**
-     * @param $msfData
-     * @param $object
-     * @return bool
-     */
-    public function onCancelValidate($msfData, &$object);
+    public function validate($msfData, &$object);
 
     /**
      * @param \Exception $e

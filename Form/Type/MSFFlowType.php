@@ -137,11 +137,11 @@ abstract class MSFFlowType
         if(isset($this->steps))
             return $this->steps;
 
-        $tmp = preg_grep("/(^[a-zA-Z0-9])/", array_keys($this->getConfiguration()));
+        $states = preg_grep("/(^[a-zA-Z0-9])/", array_keys($this->getConfiguration()));
         //we loop to remove bad numerical indexes
         $this->steps = [];
         $i = 0;
-        foreach ($tmp as $item) {
+        foreach ($states as $item) {
             if(str_replace("msf_btn","",$item) != $item)
                 continue;
             array_push($this->steps,[
@@ -171,9 +171,12 @@ abstract class MSFFlowType
             $key = $step['name'];
             $parameters['__msf_nvg'] = '';
             $parameters['__msf_state'] = $step['name'];
+
+            //state link
             $steps[$key]['link'] = $this->getRouter()->generate($routeName, $parameters);
+
             if($buttonsLink){
-                if(!empty($this->getConfiguration()[$step['name']]['before']))
+                if(!is_null($this->getConfiguration()[$step['name']]['before']))
                 {
                     $parameters['__msf_state'] = $this->getConfiguration()[$step['name']]['before'];
                     $this->executeTransition($parameters['__msf_state'],'before');
@@ -181,23 +184,25 @@ abstract class MSFFlowType
                 }else{
                     if($this->getConfiguration()['__default_paths']){
                         $steps[$key]['linkbefore'] = $this->getConfiguration()['__root'];
-                    }else
-                        throw new MSFConfigurationNotFoundException($step['name'],'before');
+                    }else{
+                        $steps[$key]['linkbefore'] = "#";
+                    }
                 }
 
-                if(!empty($this->getConfiguration()[$step['name']]['after']))
+                if(!is_null($this->getConfiguration()[$step['name']]['after']))
                 {
                     $parameters['__msf_state'] = $this->getConfiguration()[$step['name']]['after'];
                     $this->executeTransition($parameters['__msf_state'],'after');
                     $steps[$key]['linkafter'] = $this->getRouter()->generate($routeName, $parameters);
                 }else{
                     if($this->getConfiguration()['__default_paths']){
-                        $steps[$key]['linkbefore'] = $this->getConfiguration()['__final_redirection'];
-                    }else
-                        throw new MSFConfigurationNotFoundException($step['name'],'after');
+                        $steps[$key]['linkafter'] = $this->getConfiguration()['__final_redirection'];
+                    }else{
+                        $steps[$key]['linkafter'] = "#";
+                    }
                 }
 
-                if(!empty($this->getConfiguration()[$step['name']]['cancel']))
+                if(!is_null($this->getConfiguration()[$step['name']]['cancel']))
                 {
                     $parameters['__msf_state'] = $this->getConfiguration()[$step['name']]['cancel'];
                     $this->executeTransition($parameters['__msf_state'],'cancel');
@@ -205,8 +210,12 @@ abstract class MSFFlowType
                 }else{
                     if($this->getConfiguration()['__default_paths']){
                         $steps[$key]['linkcancel'] = $this->getCancelRedirectionPage(null);
-                    }else
-                        throw new MSFConfigurationNotFoundException($step['name'],'cancel');
+                    }else{
+                        if($this->getConfiguration()['__buttons_have_cancel'])
+                            throw new MSFConfigurationNotFoundException($step['name'],'cancel');
+                        else
+                            $steps[$key]['linkcancel'] = "#";
+                    }
                 }
             }
         }

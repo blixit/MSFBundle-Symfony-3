@@ -22,7 +22,7 @@ abstract class MSFBuilderType
     implements MSFBuilderInterface
 {
 
-    const ACTIONS_SUBMIT = 'save'; // default symfony action for submit
+    const ACTIONS_SUBMIT = 'msf_btn_submit';
     const ACTIONS_CANCEL = 'msf_btn_cancel';
     const ACTIONS_NEXT = 'msf_btn_next';
     const ACTIONS_PREVIOUS = 'msf_btn_previous';
@@ -85,44 +85,25 @@ abstract class MSFBuilderType
          * ici, on pourrait regarder si une fonction init a été fournie. Si oui, utiliser son résultat comme
          * entrée de setcurrentForm()
          */
-        $form = $this->getFormFactory()->createBuilder(
+        $form = $this->getFormFactory()->create(
             $config['formtype'],
             $data,
             [
                 'action'    =>  $config['action'],
                 'method'    =>  $config['method'],
             ]
-        )->getForm();
+        );
 
         $this->setCurrentForm($form);
 
         if( ! $this->isAvailable($this->getLocalConfiguration()['after'])){
-            /*if(! empty($this->getConfiguration()['msf_btn_next']['active'])){
-                $this->addButton(self::ACTIONS_NEXT, $this->getConfiguration()['msf_btn_next']);
-            }*/
-            $conf = $this->getConfiguration()[self::ACTIONS_NEXT];
-            $conf['active'] = false;
-            $this->setConfigurationWith(self::ACTIONS_NEXT,$conf);
+            $this->setConfigurationWith('__buttons_have_next',false);
         }
         if( ! $this->isAvailable($this->getLocalConfiguration()['before'])){
-            /*if(! empty($this->getConfiguration()['msf_btn_previous']['active'])){
-                $this->addButton(self::ACTIONS_PREVIOUS, $this->getConfiguration()['msf_btn_previous']);
-            }*/
-            $conf = $this->getConfiguration()[self::ACTIONS_PREVIOUS];
-            $conf['active'] = false;
-            $this->setConfigurationWith(self::ACTIONS_PREVIOUS,$conf);
+            $this->setConfigurationWith('__buttons_have_previous',false);
         }
-        /*
-        if(array_key_exists('msf_btn_cancel',$this->getConfiguration())){
-            //if( $this->addCancel){
-            $this->addButton(self::ACTIONS_CANCEL, $this->getConfiguration()['msf_btn_cancel']);
-            //}
-        }
-        if(array_key_exists('msf_btn_submit',$this->getConfiguration())){
-            $this->addButton(self::ACTIONS_SUBMIT, $this->getConfiguration()['msf_btn_submit']);
-        }
-        */
 
+        //var_dump($this->getConfiguration()); die;
 
 
         return $this->getCurrentForm();
@@ -131,8 +112,8 @@ abstract class MSFBuilderType
 
     public final function addSubmitButton(array $options = [])
     {
-        $options['active'] = true;
-        $this->setConfigurationWith('msf_btn_submit', $options);
+        $this->setConfigurationWith('__buttons_have_submit', $options);
+        $this->setConfigurationWith(self::ACTIONS_SUBMIT, $options);
         return $this;
     }
 
@@ -148,11 +129,8 @@ abstract class MSFBuilderType
      */
     public final function addCancelButton(array $options = [])
     {
-        $options['active'] = true;
-        $this->setConfigurationWith('msf_btn_cancel', $options);
-        if(array_key_exists('action',$options)){
-            $this->setLocalConfiguration('cancel',$options['action']);
-        }
+        $this->setConfigurationWith('__buttons_have_cancel', $options);
+        $this->setConfigurationWith(self::ACTIONS_CANCEL, $options);
         return $this;
     }
 
@@ -162,11 +140,8 @@ abstract class MSFBuilderType
      */
     public final function addNextButton(array $options = [])
     {
-        $options['active'] = true;
-        $this->setConfigurationWith('msf_btn_next', $options);
-        if(array_key_exists('action',$options)){
-            $this->setLocalConfiguration('after',$options['after']);
-        }
+        $this->setConfigurationWith('__buttons_have_next', $options);
+        $this->setConfigurationWith(self::ACTIONS_NEXT, $options);
         return $this;
     }
 
@@ -178,19 +153,9 @@ abstract class MSFBuilderType
      */
     public final function addPreviousButton(array $options = [])
     {
-        $options['active'] = true;
-        $this->setConfigurationWith('msf_btn_previous', $options);
-        if(array_key_exists('action',$options)){
-            $this->setLocalConfiguration('before',$options['before']);
-        }
+        $this->setConfigurationWith('__buttons_have_previous', $options);
+        $this->setConfigurationWith(self::ACTIONS_PREVIOUS, $options);
         return $this;
-    }
-
-    private function addButton($name, array $options){
-        $this->getCurrentForm()->add($name,SubmitType::class,[
-            'label'  => isset($options['label']) ? $options['label'] : 'Button',
-            'attr'  => isset($options['attr']) ? $options['attr'] : []
-        ]);
     }
 
     /**
@@ -208,21 +173,30 @@ abstract class MSFBuilderType
     }
 
     public function getButtons(){
-        $tmp = preg_grep("/^msf_btn_/", array_keys($this->getConfiguration()));
+        $tmpButtons = preg_grep("/^msf_btn_/", array_keys($this->getConfiguration()));
         if(empty($this->getConfiguration()['__root']))
             throw new MSFConfigurationNotFoundException('','',"GetButtons() requires '__root' parameter. ");
 
         $stepsLinks = $this->getStepsWithLink($this->getConfiguration()['__root'],[],true);
 
-        foreach ($tmp as $item){
-            $tmp[$item] = $this->getConfiguration()[$item];
-            if($item == self::ACTIONS_CANCEL)
-                $tmp[$item]['link'] = $stepsLinks[$this->getState()]['linkcancel'];
-            if($item == self::ACTIONS_PREVIOUS)
-                $tmp[$item]['link'] = $stepsLinks[$this->getState()]['linkbefore'];
-            if($item == self::ACTIONS_NEXT)
-                $tmp[$item]['link'] = $stepsLinks[$this->getState()]['linkafter'];
+        $buttonsToAdd = [];
+        foreach ($tmpButtons as $item){
+            if($item == self::ACTIONS_SUBMIT && $this->getConfiguration()['__buttons_have_submit']){
+                $buttonsToAdd[$item] = $this->getConfiguration()[$item];
+            }
+            elseif($item == self::ACTIONS_CANCEL && $this->getConfiguration()['__buttons_have_cancel']){
+                $buttonsToAdd[$item] = $this->getConfiguration()[$item];
+                $buttonsToAdd[$item]['link'] = $stepsLinks[$this->getState()]['linkcancel'];
+            }
+            elseif($item == self::ACTIONS_PREVIOUS && $this->getConfiguration()['__buttons_have_previous']){
+                $buttonsToAdd[$item] = $this->getConfiguration()[$item];
+                $buttonsToAdd[$item]['link'] = $stepsLinks[$this->getState()]['linkbefore'];
+            }
+            elseif($item == self::ACTIONS_NEXT && $this->getConfiguration()['__buttons_have_next'] ){
+                $buttonsToAdd[$item] = $this->getConfiguration()[$item];
+                $buttonsToAdd[$item]['link'] = $stepsLinks[$this->getState()]['linkafter'];
+            }
         }
-        return $tmp;
+        return $buttonsToAdd;
     }
 }

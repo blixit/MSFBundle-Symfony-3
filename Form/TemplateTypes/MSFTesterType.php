@@ -10,11 +10,10 @@ namespace Blixit\MSFBundle\Form\TemplateTypes;
 
 use Blixit\MSFBundle\Core\MSFService;
 use Blixit\MSFBundle\Entity\Example\Blog;
-use Blixit\MSFBundle\Form\Type\MSFBuilderType;
-use Blixit\MSFBundle\Form\Type\MSFFlowType;
+use Blixit\MSFBundle\Form\Type\MSFAbstractType;
 
 class MSFTesterType
-    extends MSFBuilderType
+    extends MSFAbstractType
 {
     function __construct(MSFService $msf, $defaultState)
     {
@@ -29,6 +28,7 @@ class MSFTesterType
             '__root'=>'msfbundle',
             '__final_redirection'=>'msfbundle',
             '__on_cancel'=>['redirection'=>$this->getRouter()->generate('msfbundle')],
+            '__on_terminate'=>['destroy_data'=>true],
 
             'blog'  =>  [
                 'label'=> "State 1",
@@ -36,17 +36,16 @@ class MSFTesterType
                 'after'    => function($msfData){
 
                     return 'go';
-                },
-                'before'    => 'blog',
+                }
             ],
             'go'  =>  [
                 'label'=> "Go",
                 'entity'    => Blog::class,
+                'before'    => 'blog',
                 'after'    => function($msfData){
 
                     return null;
-                },
-                'before'    => 'blog'
+                }
             ]
         ];
     }
@@ -73,13 +72,13 @@ class MSFTesterType
                 'class'=>"inline btn btn-warning pull-right"
             ]
         ])
-                /*
+
             ->addPreviousButton([
             'label'=>'Précédent',
             'attr'=>[
                 'class'=>"inline btn btn-warning"
             ]
-        ])*/
+        ])
             ;
     }
 

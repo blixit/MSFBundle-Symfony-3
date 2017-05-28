@@ -106,6 +106,13 @@ abstract class MSFBaseType
              * Labels
              */
             '__title'   => "MSF Form",
+            /**
+             * Buttons
+             */
+            '__buttons_have_submit' => false,
+            '__buttons_have_next' => false,
+            '__buttons_have_previous' => false,
+            '__buttons_have_cancel' => false,
         ];
 
         $this->msfDataLoader = new MSFDataLoader ();
