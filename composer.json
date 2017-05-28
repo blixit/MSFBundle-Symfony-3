@@ -1,0 +1,27 @@
+{
+    "name": "blixit/msf-bundle",
+    "description": "Multi step forms form Symfony 3",
+    "type": "symfony-bundle",
+    "keywords": ["form", "wizard", "step", "symfony3"],
+    "homepage": "https://github.com/blixit/MSFBundle-Symfony-3",
+    "require": {
+        "jms/serializer": "^1.7",
+        "symfony/form": "^3.2"
+    },
+    "require-dev": {
+        "phpunit/phpunit": "4.8"
+    },
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "blixit",
+            "email": "celestinya@gmail.com"
+        }
+    ],
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-4": {
+            "Blixit\\MSFBundle\\": ""
+        }
+    }
+}

@@ -23,23 +23,14 @@ class DefaultMsfController extends Controller
      */
     public function indexAction(Request $request){
 
-        $jms = $this->container->get('jms_serializer');
-        $session = $this->container->get('session');
-
-
-        //$session->remove('__msf_dataloader');
-        //$session->save();
-
-
-        /**
-         * Blixit MSFBundle Form
-         */
         $time = microtime();
+
         $msf = $this->container->get('msf')->create(MSFTesterType::class,"blog");
         $form = $msf->getForm();
         $title = $msf->getLabel();
         $buttons = $msf->getButtons();
         $menu = $msf->getMenu('msfbundle');
+
         $time = microtime() - $time;
 
 
@@ -47,7 +38,6 @@ class DefaultMsfController extends Controller
 
         if($form->isSubmitted() && $form->isValid() ) {
             $msf->done() ;
-            //die;
         }
 
         return $this->render('BlixitMultiStepFormBundle:Default:default.html.twig',[
