@@ -212,7 +212,7 @@ abstract class MSFFlowType
                         $steps[$key]['linkcancel'] = $this->getCancelRedirectionPage(null);
                     }else{
                         if($this->getConfiguration()['__buttons_have_cancel'])
-                            throw new MSFConfigurationNotFoundException($step['name'],'cancel');
+                            $steps[$key]['linkcancel'] = $this->getConfiguration()['__root'];
                         else
                             $steps[$key]['linkcancel'] = "#";
                     }
@@ -221,6 +221,32 @@ abstract class MSFFlowType
         }
         $this->stepsWithLink = $steps;
         return $this->stepsWithLink;
+    }
+
+    /**
+     * Returns menu
+     * @param $routeName
+     * @return array
+     */
+    public function getMenu($routeName){
+        $states = $this->getSteps();
+
+        $menu = [];
+        foreach ($states as $key => $step){
+            $key = $step['name'];
+            $parameters['__msf_nvg'] = '';
+            $parameters['__msf_state'] = $step['name'];
+
+            //name
+            $menu[$key]['name'] = $key;
+            //state link
+            if($this->isAvailable($key)){
+                $menu[$key]['link'] = $this->getRouter()->generate($routeName, $parameters);
+            }else
+                $menu[$key]['link'] = null;
+        }
+
+        return $menu;
     }
 
     public function initTransitions()

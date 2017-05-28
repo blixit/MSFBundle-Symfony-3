@@ -20,16 +20,24 @@
         <!--{ { form_row(form.msf_cancel_action) }}-->
             <div class="row inline">
                 {% if buttons.msf_btn_submit is defined %}
-                    <button class="{{ buttons.msf_btn_submit.attr.class }}" type="submit" name="msf_btn_submit">{{ buttons.msf_btn_submit.label }}</button>
+                    <button class="{{ buttons.msf_btn_submit.attr.class }}" type="submit" name="msf_btn_submit">
+                        {{ buttons.msf_btn_submit.label }}</button>
                 {% endif %}
                 {% if buttons.msf_btn_cancel is defined %}
-                    <a href="{{ buttons.msf_btn_cancel.link }}" class="{{ buttons.msf_btn_cancel.attr.class }}" >{{ buttons.msf_btn_cancel.label }}</a>
+                    <a href="{{ buttons.msf_btn_cancel.link }}" class="{{ buttons.msf_btn_cancel.attr.class }}" >
+                        {{ buttons.msf_btn_cancel.label }}</a>
                 {% endif %}
                 {% if buttons.msf_btn_next is defined %}
-                        <a href="{{ buttons.msf_btn_next.link }}" class="{{ buttons.msf_btn_next.attr.class }}" >{{ buttons.msf_btn_next.label }}</a>
+                        <a href="{{ buttons.msf_btn_next.link }}" class="{{ buttons.msf_btn_next.attr.class }}" >
+                            {{ buttons.msf_btn_next.label }}
+                            <i class="fa fa-arrow-right"></i>
+                        </a>
                 {% endif %}
                 {% if buttons.msf_btn_previous is defined %}
-                        <a href="{{ buttons.msf_btn_previous.link }}" class="{{ buttons.msf_btn_previous.attr.class }}" >{{ buttons.msf_btn_previous.label }}</a>
+                        <a href="{{ buttons.msf_btn_previous.link }}" class="{{ buttons.msf_btn_previous.attr.class }}" >
+                            <i class="fa fa-arrow-left"></i>
+                            {{ buttons.msf_btn_previous.label }}
+                        </a>
                 {% endif %}
             </div>
         {{ form_end(form) }}

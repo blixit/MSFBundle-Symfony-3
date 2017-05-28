@@ -39,6 +39,7 @@ class DefaultMsfController extends Controller
         $form = $msf->getForm();
         $title = $msf->getLabel();
         $buttons = $msf->getButtons();
+        $menu = $msf->getMenu('msfbundle');
         $time = microtime() - $time;
 
 
@@ -49,15 +50,12 @@ class DefaultMsfController extends Controller
             //die;
         }
 
-
-        //var_dump($request->attributes); die;//->get('_template')->get('bundle')); die;
-
         return $this->render('BlixitMultiStepFormBundle:Default:default.html.twig',[
             'form'  =>  $form->createView(),
             'title' => $title,
             'buttons' => $buttons,
-            'msf_time'  => $time
-            //'msf_steps'=> $msf->getStepsWithLink('msfbundle',[])
+            'msf_time'  => $time,
+            'menu'  => $menu,
         ]);
     }
 }

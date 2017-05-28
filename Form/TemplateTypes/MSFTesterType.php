@@ -9,6 +9,7 @@
 namespace Blixit\MSFBundle\Form\TemplateTypes;
 
 use Blixit\MSFBundle\Core\MSFService;
+use Blixit\MSFBundle\Entity\Example\Article;
 use Blixit\MSFBundle\Entity\Example\Blog;
 use Blixit\MSFBundle\Form\Type\MSFAbstractType;
 
@@ -31,20 +32,26 @@ class MSFTesterType
             '__on_terminate'=>['destroy_data'=>true],
 
             'blog'  =>  [
-                'label'=> "State 1",
+                'label'=> "Blog",
                 'entity'    => Blog::class,
                 'after'    => function($msfData){
 
-                    return 'go';
+                    return 'article';
+                },
+                'validation' => function(){
+                    return true;
                 }
             ],
-            'go'  =>  [
-                'label'=> "Go",
-                'entity'    => Blog::class,
+            'article'  =>  [
+                'label'=> "Article",
+                'entity'    => Article::class,
                 'before'    => 'blog',
                 'after'    => function($msfData){
 
                     return null;
+                },
+                'validation' => function(){
+                    return true;
                 }
             ]
         ];
@@ -61,24 +68,23 @@ class MSFTesterType
             'attr'=>[
                 'class'=>"inline btn btn-primary"
             ]
-        ])->addCancelButton([
-            'label'=>'Annuler',
-            'attr'=>[
-                'class'=>"inline btn btn-danger"
-            ]
-        ])->addNextButton([
-            'label'=>'Suivant',
-            'attr'=>[
-                'class'=>"inline btn btn-warning pull-right"
-            ]
-        ])
-
+            ])->addCancelButton([
+                'label'=>'Annuler',
+                'attr'=>[
+                    'class'=>"inline btn btn-danger"
+                ]
+            ])->addNextButton([
+                'label'=>'Suivant',
+                'attr'=>[
+                    'class'=>"inline btn btn-warning pull-right"
+                ]
+            ])
             ->addPreviousButton([
             'label'=>'Précédent',
             'attr'=>[
                 'class'=>"inline btn btn-warning"
-            ]
-        ])
+                ]
+            ])
             ;
     }
 

@@ -60,8 +60,10 @@ abstract class MSFAbstractType
                 //Valide transitional link
                 //then we can save the dataloader
                 $undeserialized[$this->getState()] = $formdata;
-                if(!empty($action))
+                if(!empty($action)){
+                    //add an empty object
                     $undeserialized[$action] = (new \ReflectionClass($this->getConfiguration()[$action]['entity']))->newInstance();
+                }
 
                 $this->getMsfDataLoader()->setArrayData($undeserialized,$this->getSerializer());
 
