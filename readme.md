@@ -6,7 +6,7 @@ During a simple project, I found that there were not any bundle providing the Mu
 https://github.com/craue/CraueFormFlowBundle . But for me, this bundle focuses too much on the Forms themselves, which was not relevant to me. For instance, I don't use to handle Form Event.
 Then, I came to the idea I could create a bundle which let developper interact with each form separately and then use a little well-configured system to manage the set of forms, the transitions between them, hydratation, ... 
 
-Therefore I created the MSFBundle. It's a little one with currently 5 or 6 classes and works out as a service. Its usage is very similar to form themselves to reduce learning time.
+Therefore I created the MSFBundle. It's a little one with currently 5 or 6 classes and works out as a service. Its usage is very similar to forms themselves to reduce learning time.
 
 You just need ONE MsfFormType CLASS to go !!
 
@@ -15,154 +15,129 @@ Bonus : with this system, it's easy to manage transitions even between MSF. You 
 ## Example of Controller ##
 
 ``` php 
-  //using MSF service
-  $msf = $this->container->get('msf')->create(MSFRegistrationType::class);
-  $form = $msf->getForm();
+/**
+ * @Route("/msfbundle", name="msfbundle")
+ * @return \Symfony\Component\HttpFoundation\Response
+ */
+public function indexAction(Request $request){ 
+    
+    //getting service and creating form
+    $msf = $this->container->get('msf')->create(MSFTesterType::class,"blog");
+    
+    //getting symfony form
+    $form = $msf->getForm(); 
 
-  $form->handleRequest($request);
+    //request handling
+    $form->handleRequest($request);
 
-  if($form->isSubmitted() && $form->isValid() ) {
+    if($form->isSubmitted() && $form->isValid() ) {
+        //validation
+        $msf->done() ;
+    }
 
-
-      $msf->done() ;
-  } 
-  
-  return $this->render('MSF/default.html.twig', [
-      'form'      => $form->createView()
-  ]);
+    return $this->render('BlixitMultiStepFormBundle:Default:default.html.twig',[
+        'form'  =>  $form->createView(),
+        'title' => $msf->getLabel(),
+        'buttons' => $msf->getButtons(), 
+        'menu'  => $msf->getMenu('msfbundle'),
+    ]);
+}
 ```
 
-## Example of MSFFormType : MSFRegistrationType with transition callbacks ##
+## Example of MSFFormType : MSFTesterType with transition callbacks ##
 
 ``` php 
-<?php
-/**
- * Created by PhpStorm.
- * User: blixit
- * Date: 21/05/17
- * Time: 17:30
- */
-
-namespace Blixit\MSFBundle\Form\ExampleTypes;
-
-
-use Blixit\MSFBundle\Core\MSFService;
-use Blixit\MSFBundle\Entity\Example\Article;
-use Blixit\MSFBundle\Entity\Example\Blog;
-use Blixit\MSFBundle\Exception\MSFFailedToValidateFormException;
-use Blixit\MSFBundle\Form\Type\MSFAbstractType;
-
-class MSFRegistrationType
-    extends MSFAbstractType
-{
-
-    /**
-     * RegistrationType constructor.
-     * @param MSFService $msf
-     */
-    function __construct(MSFService $msf, $defaultState = 'defaultState')
-    {
-        parent::__construct($msf, $defaultState);
-    }
-
-    public function configure()
-    {
-        return [
-            '__default_paths'=> false,
-            '__default_formType'=> true,
-            '__final_redirection'=> $this->getRouter()->generate('homepage'),
-
-            'defaultState'=>[
-                'entity'    =>  Article::class,
-                'validation'=> [$this,'defaultState_validation_callback'],
-                'after'     => [$this, 'defaultState_after_callback']
-            ],
-            'secondState'=>[
-                'entity'    =>  Blog::class,
-                'before'    =>  [$this, 'secondState_before_callback'],
-                'previous_validation'    =>  [$this, 'secondState_previous_validation_callback'],
-                'after'=> null,
-                'redirection'    =>  $this->getRouter()->generate('homepage'),
-            ]
-        ];
-    }
-
-    /**
-     * Modify the form
-     * @return $this
-     */
-    public function buildMSF()
-    {
-        $this->addSubmitButton([
-            'label'     => 'Soumettre'
-        ])
-            ->addCancelButton([
-                'label'     => 'Annuler',
-                'action'    =>  $this->getRouter()->generate('homepage'),
-                'attr'      => [
-                    'class' => 'btn btn-primary'
-                ]
-            ])
-            ->addPreviousButton([
-                'label'     => 'Retour',
-                //'action'    => 'defaultState',
-                'attr'      => [
-                    'class' => 'btn btn-danger'
-                ]
-            ]);
-        return $this;
-    }
-
-    /**
-     * Callback for validating the 'defaultState' state
-     * @param $msfData
-     * @param Article $article
-     * @return bool
-     * @throws \Exception
-     */
-    protected function defaultState_validation_callback($msfData, Article &$article){
-        if($article->getName() == "Blixit")
-            throw new \Exception("Blixit can't be the author");
-
-        return true;
-    }
-
-    /**
-     * Callback for transiting to the next state
-     * @param $msfData
-     * @param Article $article
-     * @return string
-     */
-    protected function defaultState_after_callback($msfData, Article $article){
-        return 'secondState';
-    }
-
-    /**
-     * Callback for validating the 'secondState' state on previous
-     * @param $msfData
-     * @param Blog $blog
-     * @return bool
-     * @throws \Exception
-     */
-    protected function secondState_previous_validation_callback($msfData, Blog &$blog){
-        if($blog->getTheme() == "blog")
-            throw new \Exception("'blog' can't be the theme of the blog");
-
-        return true;
-    }
-
-    /**
-     * Callback for transiting to the previous state
-     * @param $msfData
-     * @param Blog|null $blog
-     * @return string
-     */
-    protected function secondState_before_callback($msfData, Blog $blog=null){
-
-        return 'defaultState';
-    }
-
-}
+ <?php
+ /**
+  * Created by PhpStorm.
+  * User: blixit
+  * Date: 26/05/17
+  * Time: 14:56
+  */
+ 
+ namespace Blixit\MSFBundle\Form\TemplateTypes;
+ 
+ use Blixit\MSFBundle\Core\MSFService;
+ use Blixit\MSFBundle\Entity\Example\Article;
+ use Blixit\MSFBundle\Entity\Example\Blog;
+ use Blixit\MSFBundle\Form\Type\MSFAbstractType;
+ 
+ class MSFTesterType
+     extends MSFAbstractType
+ {
+     function __construct(MSFService $msf, $defaultState)
+     {
+         parent::__construct($msf, $defaultState);
+     }
+ 
+     public function configure()
+     {
+         return [
+             '__default_paths'=>true,
+             '__default_formType_path'=>'\Blixit\MSFBundle\Form\ExampleTypes',
+             '__root'=>'msfbundle',
+             '__final_redirection'=>'msfbundle',
+             '__on_cancel'=>['redirection'=>$this->getRouter()->generate('msfbundle')],
+             '__on_terminate'=>['destroy_data'=>true],
+ 
+             'blog'  =>  [
+                 'label'=> "Blog",
+                 'entity'    => Blog::class,
+                 'after'    => function($msfData){
+ 
+                     return 'article';
+                 },
+                 'validation' => function(){
+                     return true;
+                 }
+             ],
+             'article'  =>  [
+                 'label'=> "Article",
+                 'entity'    => Article::class,
+                 'before'    => 'blog',
+                 'after'    => function($msfData){
+ 
+                     return null;
+                 },
+                 'validation' => function(){
+                     return true;
+                 }
+             ]
+         ];
+     }
+ 
+     /**
+      * Modify the form
+      * @return $this
+      */
+     public function buildMSF()
+     {
+         return $this->addSubmitButton([
+             'label'=>'Valider',
+             'attr'=>[
+                 'class'=>"inline btn btn-primary"
+             ]
+             ])->addCancelButton([
+                 'label'=>'Annuler',
+                 'attr'=>[
+                     'class'=>"inline btn btn-danger"
+                 ]
+             ])->addNextButton([
+                 'label'=>'Suivant',
+                 'attr'=>[
+                     'class'=>"inline btn btn-warning pull-right"
+                 ]
+             ])
+             ->addPreviousButton([
+             'label'=>'Précédent',
+             'attr'=>[
+                 'class'=>"inline btn btn-warning"
+                 ]
+             ])
+             ;
+     }
+ 
+ }
 ```
 
 ## Dependencies ##
@@ -178,26 +153,18 @@ Use of third-party php libraries is not recommended following the symfony best p
 use of JMS/Serializer (See https://symfony.com/doc/current/bundles/best_practices.html#vendors )
 
 ## Features ##
-- Transitions between forms thanks to 3 configurable callbacks : before, after, cancel. These 
-methods are invoked by previous, next() and cancel() 
+- Transitions between forms thanks to 3 configurable callbacks : before, after, cancel.  
 - [Optional] Validation callback 
-- [Optional] Buttons navigation (previous, next, cancel)
-- Temporary Storage (Database or Session)
-- The code is Symfony form like 
-
-## Upcoming Features ##
-- Buttons configuration improvement (previous, next, cancel)
+- [Optional] Buttons navigation (submit, previous, next, cancel)
+- Session Storage 
+- The code is Symfony form like  
 
 ## Performances ##
-I have not studied performance yet. My main doubt is about use of Serializer. To make easy the use of my service, I let developpers define their own validation methods. To do that, they need to access the whole MSF Data which is stored as a JSON string and to deserialize it. 
+I have not studied performance yet. My main doubt is about use of Serializer. To make easy the use of my service, I let developpers define their own validation methods. To do that, they need to access the whole MSF Data which is stored as a JSON string and to deserialize it.
+My second doubt is about use of arrays.
 
 ## Others usages ##
 
 1. You can attach one of your entities to a MSFDataLoader
 For instance, let create a MSF form to manage user registration. Let say the msf contains user, contact and role forms.
 You can add a MSFDataLoader field to your user entity. To dynamically attach the created user to this msfdataloader, go to the validation method of the 'user' configuration ( see method configure() ), set the field on the user object and then persist the user.
- 
- 
-Tutos:
-
-- how to add service to the container
