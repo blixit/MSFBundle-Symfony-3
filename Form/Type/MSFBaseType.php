@@ -271,8 +271,7 @@ abstract class MSFBaseType
 
         try{
             //conversion from json to array
-            $undeserialized = $this->getMsfDataLoader()->getData();
-            $dataArray = $this->getSerializer()->deserialize($undeserialized, 'array', 'json');
+            $dataArray = $this->getMsfDataLoader()->getArrayData($this->getSerializer());
 
             foreach ($dataArray as $state => $config){
                 //current form data

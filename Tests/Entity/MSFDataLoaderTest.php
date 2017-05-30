@@ -38,6 +38,9 @@ class MSFDataLoaderTest extends \PHPUnit_Framework_TestCase
             'key' => 'to test'
         ]));
 
+        /**
+         * Testing setArrayData
+         */
         $msfdl = new MSFDataLoader();
 
         $msfdl->setArrayData([], $this->serializer);
@@ -46,5 +49,25 @@ class MSFDataLoaderTest extends \PHPUnit_Framework_TestCase
         //$msfdl->setObjectData(null,$this->serializer);
 
         $this->assertTrue(is_string($arrayString),"getArrayData failed.");
+
+        /**
+         * Testing setData
+         */
+        $msfdl = new MSFDataLoader();
+        $msfdl->setData("test");
+        $this->assertTrue(is_string($msfdl->getData()),"setData failed to set data.");
+
+        try{
+            $notAString = 15;
+            $msfdl->setData($notAString);
+        }catch (\Exception $e){
+            $this->assertTrue(!empty($e->getMessage()));
+        }
+    }
+
+    public function testGetterSetter(){
+        $msfdl = new MSFDataLoader();
+        $msfdl->setState("state");
+        $this->assertSame("state",$msfdl->getState());
     }
 }

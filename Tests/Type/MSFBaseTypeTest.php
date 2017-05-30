@@ -16,6 +16,7 @@ use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
 
 
 use Doctrine\ORM\EntityManager;
+use Symfony\Component\Form\FormFactory;
 use Symfony\Component\HttpFoundation\RequestStack;
 
 use Symfony\Component\Routing\Router;
@@ -60,23 +61,25 @@ class MSFBaseTypeTest extends WebTestCase
         $requestStack = $this->getMockBuilder(RequestStack::class)->getMock();
         $requestStack->method('getCurrentRequest')->willReturn($request);
 
-        $router = $this->getMockClass(Router::class);
+        $router = $this->getMockBuilder(Router::class)
+            ->disableOriginalConstructor()
+            ->setMethods(array('create'))
+            ->getMock();
 
-        /*
-        $formFactory = $this->getMockClass(FormFactory::class);
+
+        $formFactory = $this->getMockBuilder(FormFactory::class)->disableOriginalConstructor()->getMock();
         $form = $this
             ->getMockBuilder('Symfony\Tests\Component\Form\FormInterface')
             ->setMethods(array('createView'))
             ->getMock()
         ;
         $form
-            ->expects($this->once())
             ->method('createView')
+            ->willReturn(null);
         ;
         $formFactory
-            ->expects($this->once())
             ->method('create')
-            ->will($this->returnValue($form));*/
+            ->willReturn($form);
 
         //$serializerClass = $this->getMockClass(Serializer::class);
 
@@ -84,12 +87,14 @@ class MSFBaseTypeTest extends WebTestCase
         $serializer->method('serialize')->withAnyParameters()->willReturn([]);
         $serializer->method('deserialize')->withAnyParameters()->willReturn(new MSFDataLoader());
 
-        $entityManager = $this->getMockClass(EntityManager::class);
+        $entityManager = $this->getMockBuilder(EntityManager::class)->disableOriginalConstructor()->getMock();
+
         $container = $this->getMockBuilder("Symfony\Component\DependencyInjection\ContainerInterface")
             ->getMock();
 
         $this->msf = $this->getMockBuilder(MSFService::class)
-            ->disableOriginalConstructor()
+            //->disableOriginalConstructor()
+                ->setConstructorArgs([$requestStack,$router,$formFactory,$serializer,$entityManager,$session])
             ->getMock();
 
         $this->msf
@@ -123,7 +128,7 @@ class MSFBaseTypeTest extends WebTestCase
     {
         $faketype = $this->faketype;
 
-        $this->assertTrue($faketype->configuration['__root'] == 'FAKEROOT', "default configuration for '__root' not erased.");
+        $this->assertTrue($faketype->getConfiguration()['__root'] == 'FAKEROOT', "default configuration for '__root' not erased.");
 
         if (!$this->msf->getSession()->has('__msf_dataloader')){
             $this->assertTrue($faketype->getMsfDataLoader()->getState() == 'fake_state', "default state not erased");

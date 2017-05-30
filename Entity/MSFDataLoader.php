@@ -36,6 +36,12 @@ class MSFDataLoader
     private $data;
 
     /**
+     * Use to cache $data
+     * @var array
+     */
+    private $arrayData = [];
+
+    /**
      * MSFDataLoader constructor.
      */
     function __construct()
@@ -81,12 +87,16 @@ class MSFDataLoader
      * Set data
      *
      * @param string $data
-     *
      * @return MSFDataLoader
+     * @throws \Exception
      */
     public function setData($data)
     {
+        if(! is_string($data))
+            throw new \Exception("The given value is not a string. ");
+
         $this->data = $data;
+        $this->arrayData = null;
 
         return $this;
     }
@@ -111,6 +121,7 @@ class MSFDataLoader
     public function setArrayData($data, $serializer, $format = 'json')
     {
         $this->data = $serializer->serialize($data, $format);
+        $this->arrayData = null;
 
         return $this;
     }
@@ -120,7 +131,11 @@ class MSFDataLoader
      * @return mixed
      */
     public function getArrayData($serializer){
-        return $serializer->deserialize($this->data,'array','json');
+        if(empty($this->arrayData)){
+            $this->arrayData = $serializer->deserialize($this->data,'array','json');
+        }
+
+        return $this->arrayData;
     }
 
 }
