@@ -17,6 +17,6 @@
     </filter>
     <logging>
         <log type="coverage-html" target="coverage" lowUpperBound="10"
-         highLowerBound="50"/>
+         highLowerBound="45"/>
     </logging>
 </phpunit>

@@ -92,6 +92,16 @@ class MSFDataLoader
     }
 
     /**
+     * Get data
+     *
+     * @return string
+     */
+    public function getData()
+    {
+        return $this->data;
+    }
+
+    /**
      * Set data with an array
      * @param $data
      * @param $serializer
@@ -106,27 +116,11 @@ class MSFDataLoader
     }
 
     /**
-     * Set data with an object
-     * @param $object
      * @param $serializer
-     * @param string $format
-     * @return $this
+     * @return mixed
      */
-    public function setObjectData($object, $serializer, $format = 'json')
-    {
-        $this->data = $serializer->serialize($object, $format);
-
-        return $this;
-    }
-
-    /**
-     * Get data
-     *
-     * @return string
-     */
-    public function getData()
-    {
-        return $this->data;
+    public function getArrayData($serializer){
+        return $serializer->deserialize($this->data,'array','json');
     }
 
 }

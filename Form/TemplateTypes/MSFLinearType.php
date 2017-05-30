@@ -16,7 +16,7 @@ use Blixit\MSFBundle\Form\Builder\MSFBuilderInterface;
 use Blixit\MSFBundle\Form\Type\MSFAbstractType;
 
 abstract class MSFLinearType
-    extends MSFAbstractType
+    //extends MSFAbstractType
     implements MSFLinearTypeInterface
 {
 
