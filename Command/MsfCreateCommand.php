@@ -128,12 +128,13 @@ class MsfCreateCommand extends ContainerAwareCommand
                     }
 
                     //FormType
-                    if($input->getOption('verbose')){
-                        $output->writeln("Detecting form type for '".$entity."' ... ");
-                    }
+                    $askFormType = new Question("Enter the fullname of the formtype class (Eg: \AppBundle\Form\UserType ) : ");
+                    if( $this->configuration['__default_formType']){
 
-                    $askFormType = new Question("Enter the full formtype classname (Eg: \AppBundle\Form\UserType ) : ");
-                    if($this->configuration['__default_formType']){
+                        if($input->getOption('verbose')){
+                            $output->writeln("Detecting form type for '".$entity."' ... ");
+                        }
+
                         $tmp = explode("\\",$entity);
                         $className = end($tmp);
 
@@ -152,6 +153,14 @@ class MsfCreateCommand extends ContainerAwareCommand
                             }
                         }while(empty($formtype) || $error);
 
+                    }else{
+                        $formtype = $helperQuestion->ask($input, $output, $askFormType);
+
+                        $tmp = explode("\\",$entity);
+                        $className = end($tmp);
+
+                        $this->configuration['states'][$answer]['className'] = $className;
+                        $this->configuration['states'][$answer]['formtype'] = $formtype;
                     }
 
                     //Action before
