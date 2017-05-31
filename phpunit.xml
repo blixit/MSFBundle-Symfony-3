@@ -1,10 +1,19 @@
 <?xml version="1.0" encoding="utf-8" ?>
-<phpunit colors="true">
+<phpunit colors="true"
+         bootstrap="Tests/bootstrap.php"
+         failOnRisky="true"
+         failOnWarning="true"
+         stopOnFailure="true"
+
+         convertErrorsToExceptions="true"
+         convertNoticesToExceptions="true"
+         convertWarningsToExceptions="true"
+>
     <testsuite name="MSFBundle">
         <directory>./Tests</directory>
     </testsuite>
     <php>
-        <server name="KERNEL_DIR" value="../../../app" />
+        <server name="KERNEL_DIR" value="Tests/Fixtures/app/" />
     </php>
     <filter>
         <whitelist processUncoveredFilesFromWhitelist="true">
@@ -12,6 +21,8 @@
             <exclude>
                 <directory suffix=".php">./Tests</directory>
                 <directory suffix=".php">./DependencyInjection</directory>
+                <directory suffix=".php">./vendor</directory>
+                <directory suffix=".php">./Resources</directory>
             </exclude>
         </whitelist>
     </filter>

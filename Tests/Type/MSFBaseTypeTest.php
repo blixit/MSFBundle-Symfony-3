@@ -48,6 +48,7 @@ class MSFBaseTypeTest extends WebTestCase
     private $faketype;
 
     public function setUp() {
+
         $client = $this->createClient();
         $client->request('POST','/msfbundle',['parameters']);
 
@@ -124,6 +125,7 @@ class MSFBaseTypeTest extends WebTestCase
         $this->faketype = $this->msf->create(FakeType::class);
     }
 
+
     public function testconfigure()
     {
         $faketype = $this->faketype;
@@ -180,4 +182,6 @@ class MSFBaseTypeTest extends WebTestCase
             $this->assertStringStartsWith("Failed to undeserialize",$e->getMessage());
         }
     }
+
+
 }

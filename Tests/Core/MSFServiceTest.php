@@ -11,7 +11,7 @@ namespace Blixit\MSFBundle\Tests\Core;
 use Blixit\MSFBundle\Core\MSFService;
 use Blixit\MSFBundle\Form\ExampleTypes\MSFRegistrationType;
 use Blixit\MSFBundle\Form\Type\MSFBaseType;
-use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
+use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 class FakeType{
     function __construct(MSFService $msf, $defaultState='')
@@ -29,7 +29,7 @@ class MSFServiceTest extends KernelTestCase
 
     public function setUp()
     {
-        $kernel = static::createKernel();
+        $kernel = $this->createKernel();
         $kernel->boot();
 
         self::$container = $kernel->getContainer();

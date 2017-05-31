@@ -1,0 +1,8 @@
+# This file is auto-generated during the composer install
+parameters:
+    database_host: 127.0.0.1
+    database_port: null
+    database_name: null
+    database_user: root
+    database_password: ''
+    secret: 9669ce9b95c284854d15e7c4d1eac9ff7e986cd9
