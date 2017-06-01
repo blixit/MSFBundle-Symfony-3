@@ -19,6 +19,7 @@ use Doctrine\ORM\EntityManager;
 use Symfony\Component\Form\FormFactory;
 use Symfony\Component\HttpFoundation\RequestStack;
 
+use Symfony\Component\HttpFoundation\Session\Session;
 use Symfony\Component\Routing\Router;
 
 use JMS\Serializer\Serializer;
@@ -45,9 +46,20 @@ class MSFBaseTypeTest extends WebTestCase
      */
     private $msf;
 
+    /**
+     * @var FakeType
+     */
     private $faketype;
 
+    /**
+     * @var Serializer
+     */
     private $serializer;
+
+    /**
+     * @var Session
+     */
+    private $session;
 
     public function setUp() {
 
@@ -59,7 +71,7 @@ class MSFBaseTypeTest extends WebTestCase
 
 
         $request = $client->getRequest();
-        $session = $client->getRequest()->getSession();
+        $this->session = $client->getRequest()->getSession();
 
         $requestStack = $this->getMockBuilder(RequestStack::class)->getMock();
         $requestStack->method('getCurrentRequest')->willReturn($request);
@@ -93,7 +105,7 @@ class MSFBaseTypeTest extends WebTestCase
 
         $this->msf = $this->getMockBuilder(MSFService::class)
             //->disableOriginalConstructor()
-                ->setConstructorArgs([$requestStack,$router,$formFactory,$serializer,$entityManager,$session])
+                ->setConstructorArgs([$requestStack,$router,$formFactory,$serializer,$entityManager,$this->session])
             ->getMock();
 
         $this->msf
@@ -101,7 +113,7 @@ class MSFBaseTypeTest extends WebTestCase
             ->willReturn($requestStack);
         $this->msf
             ->method('getSession')
-            ->willReturn($session);
+            ->willReturn($this->session);
         $this->msf
             ->method('getSerializer')
             ->willReturn($this->serializer);
@@ -114,6 +126,45 @@ class MSFBaseTypeTest extends WebTestCase
         $this->faketype = $this->msf->create(FakeType::class);
     }
 
+    public function testInit(){
+        $faketype = $this->faketype;
+
+        $msfdl = new MSFDataLoader();
+        $msfdl->setState("new");
+
+        $faketype->getSession()->set('__msf_dataloader',$msfdl);
+
+        $faketype->init();
+
+        $this->assertSame("new",$faketype->getMsfDataLoader()->getState());
+        $this->assertSame("new",$faketype->getState());
+
+    }
+
+    public function testGettersSetters(){
+        $faketype = $this->faketype;
+        $this->assertInstanceOf(MSFService::class, $faketype->getMsf());
+        $this->assertSame($this->msf, $faketype->getMsf());
+
+        $faketype->setDefaultState("expected");
+        $this->assertSame("expected",$faketype->getDefaultState());
+
+        $faketype->setConfiguration(['expected'=>'value']);
+        $this->assertArrayHasKey('expected',$faketype->getConfiguration());
+
+        $any = "any";
+
+        $faketype->setCurrentForm($any);
+        $this->assertSame($any,$faketype->getCurrentForm());
+
+        $faketype->setMsfDataLoader($any);
+        $this->assertSame($any,$faketype->getMsfDataLoader());
+
+        $this->assertFalse($faketype->isSetNavigation());
+        $faketype->setNavigation();
+        $this->assertTrue($faketype->isSetNavigation());
+
+    }
 
     public function testconfigure()
     {

@@ -20,6 +20,11 @@ class MSFDataLoaderTest extends \PHPUnit_Framework_TestCase
         $this->serializer = $this->getMockBuilder(Serializer::class)->disableOriginalConstructor()->getMock();
     }
 
+    public function testgetId(){
+
+        $msfdl = new MSFDataLoader();
+        $this->assertNull($msfdl->getId());
+    }
     public function testgetArrayData(){
 
         $this->serializer->method('deserialize')->withAnyParameters()->willReturn([

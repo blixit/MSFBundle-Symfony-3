@@ -215,6 +215,7 @@ class MSFFlowTypeTest extends WebTestCase
     public function testNotFoundPages(){
 
         $faketype = $this->mockSetSimpleFakeType();
+        //delete local configuration to provoke the below errors
         $faketype->setConfigurationWith($faketype->getState(),[]);
 
         //NEXT

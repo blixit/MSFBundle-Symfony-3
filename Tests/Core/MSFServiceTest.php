@@ -9,8 +9,6 @@
 namespace Blixit\MSFBundle\Tests\Core;
 
 use Blixit\MSFBundle\Core\MSFService;
-use Blixit\MSFBundle\Form\ExampleTypes\MSFRegistrationType;
-use Blixit\MSFBundle\Form\Type\MSFBaseType;
 use \Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 
 class FakeType{
@@ -36,6 +34,29 @@ class MSFServiceTest extends KernelTestCase
 
         $this->msf = self::$container->get('msf');
 
+    }
+
+    public function testGettersSetters(){
+
+        $any = "any";
+
+        $this->msf->setRequestStack($any);
+        $this->assertSame($any, $this->msf->getRequestStack());
+
+        $this->msf->setRouter($any);
+        $this->assertSame($any, $this->msf->getRouter());
+
+        $this->msf->setFormFactory($any);
+        $this->assertSame($any, $this->msf->getFormFactory());
+
+        $this->msf->setSerializer($any);
+        $this->assertSame($any, $this->msf->getSerializer());
+
+        $this->msf->setSession($any);
+        $this->assertSame($any, $this->msf->getSession());
+
+        $this->msf->setEntityManager($any);
+        $this->assertSame($any, $this->msf->getEntityManager());
     }
 
     public function testcreate()
