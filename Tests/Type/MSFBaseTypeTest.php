@@ -227,5 +227,4 @@ class MSFBaseTypeTest extends WebTestCase
         }
     }
 
-
 }

@@ -134,8 +134,6 @@ abstract class MSFFlowType
      */
     public final function getSteps()
     {
-        if(isset($this->steps))
-            return $this->steps;
 
         $states = preg_grep("/(^[a-zA-Z0-9])/", array_keys($this->getConfiguration()));
         //we loop to remove bad numerical indexes
@@ -154,6 +152,19 @@ abstract class MSFFlowType
     }
 
     /**
+     * Create links for getStepsWithLink method
+     * @param $currentStep
+     * @param $transition
+     * @param $routeName
+     * @param $parameters
+     * @return string
+     */
+    private function executeAndSetStep($currentStep, $transition, $routeName, $parameters){
+        $parameters['__msf_state'] = $this->getConfiguration()[$currentStep][$transition];
+        $this->executeTransition($parameters['__msf_state'],$transition);
+        return $this->getRouter()->generate($routeName, $parameters);
+    }
+    /**
      * Get steps with related links
      * @param $routeName
      * @param array $parameters
@@ -163,8 +174,6 @@ abstract class MSFFlowType
      */
     public function getStepsWithLink($routeName, array $parameters, $buttonsLink = false)
     {
-        if(isset($this->stepsWithLink))
-            return $this->stepsWithLink;
         $steps = [];
 
         foreach ($this->getSteps() as $key => $step){
@@ -178,9 +187,7 @@ abstract class MSFFlowType
             if($buttonsLink){
                 if(!is_null($this->getConfiguration()[$step['name']]['before']))
                 {
-                    $parameters['__msf_state'] = $this->getConfiguration()[$step['name']]['before'];
-                    $this->executeTransition($parameters['__msf_state'],'before');
-                    $steps[$key]['linkbefore'] = $this->getRouter()->generate($routeName, $parameters);
+                    $steps[$key]['linkbefore'] = $this->executeAndSetStep($step['name'],'before',$routeName,$parameters);
                 }else{
                     if($this->getConfiguration()['__default_paths']){
                         $steps[$key]['linkbefore'] = $this->getConfiguration()['__root'];
@@ -191,9 +198,7 @@ abstract class MSFFlowType
 
                 if(!is_null($this->getConfiguration()[$step['name']]['after']))
                 {
-                    $parameters['__msf_state'] = $this->getConfiguration()[$step['name']]['after'];
-                    $this->executeTransition($parameters['__msf_state'],'after');
-                    $steps[$key]['linkafter'] = $this->getRouter()->generate($routeName, $parameters);
+                    $steps[$key]['linkafter'] = $this->executeAndSetStep($step['name'],'after',$routeName,$parameters);
                 }else{
                     if($this->getConfiguration()['__default_paths']){
                         $steps[$key]['linkafter'] = $this->getConfiguration()['__final_redirection'];
@@ -204,9 +209,7 @@ abstract class MSFFlowType
 
                 if(!is_null($this->getConfiguration()[$step['name']]['cancel']))
                 {
-                    $parameters['__msf_state'] = $this->getConfiguration()[$step['name']]['cancel'];
-                    $this->executeTransition($parameters['__msf_state'],'cancel');
-                    $steps[$key]['linkcancel'] = $this->getRouter()->generate($routeName, $parameters);
+                    $steps[$key]['linkcancel'] = $this->executeAndSetStep($step['name'],'cancel',$routeName,$parameters);
                 }else{
                     if($this->getConfiguration()['__default_paths']){
                         $steps[$key]['linkcancel'] = $this->getCancelRedirectionPage(null);
@@ -234,11 +237,14 @@ abstract class MSFFlowType
         $menu = [];
         foreach ($states as $key => $step){
             $key = $step['name'];
-            $parameters['__msf_nvg'] = '';
-            $parameters['__msf_state'] = $step['name'];
+            $parameters = [
+                '__msf_nvg' => '',
+                '__msf_state' => $step['name']
+            ];
 
             //name
             $menu[$key]['name'] = $key;
+
             //state link
             if($this->isAvailable($key)){
                 $menu[$key]['link'] = $this->getRouter()->generate($routeName, $parameters);
@@ -249,6 +255,27 @@ abstract class MSFFlowType
         return $menu;
     }
 
+    /**
+     * Set or execute (if callable) a transition
+     * @param array $config
+     * @param $state
+     * @param $transition
+     */
+    private function setOrExecuteTrantition(array $config, $state, $transition){
+
+        $config = $this->getConfiguration()[$state];
+        if (!array_key_exists($transition, $config)) {
+            //$this->setLocalConfiguration('after', null);
+            $config[$transition] = null;
+            $this->setConfigurationWith($state,$config);
+        } else {
+            $this->executeTransition($state,$transition);
+        }
+    }
+
+    /**
+     * Initialize all the transitions
+     */
     public function initTransitions()
     {
         foreach ($this->getSteps() as $key => $step){
@@ -256,33 +283,15 @@ abstract class MSFFlowType
 
             //after
             $config = $this->getConfiguration()[$state];
-            if (!array_key_exists('after', $config)) {
-                //$this->setLocalConfiguration('after', null);
-                $config['after'] = null;
-                $this->setConfigurationWith($state,$config);
-            } else {
-                $this->executeTransition($state,'after');
-            }
+            $this->setOrExecuteTrantition($config,$state,'after');
 
             //before
             $config = $this->getConfiguration()[$state];
-            if (!array_key_exists('before', $config)) {
-                //$this->setLocalConfiguration('before', null);
-                $config['before'] = null;
-                $this->setConfigurationWith($state,$config);
-            } else {
-                $this->executeTransition($state,'before');
-            }
+            $this->setOrExecuteTrantition($config,$state,'before');
 
             //cancel
             $config = $this->getConfiguration()[$state];
-            if (!array_key_exists('cancel', $config)) {
-                //$this->setLocalConfiguration('cancel', null);
-                $config['cancel'] = null;
-                $this->setConfigurationWith($state,$config);
-            } else {
-                $this->executeTransition($state,'cancel');
-            }
+            $this->setOrExecuteTrantition($config,$state,'cancel');
 
             //redirection
             $config = $this->getConfiguration()[$state];
@@ -297,8 +306,6 @@ abstract class MSFFlowType
                     $this->setConfigurationWith($state,$config);
                 }
             }
-
-            //$this->getConfiguration()[$this->getState()] = $this->getLocalConfiguration();
         }
     }
 

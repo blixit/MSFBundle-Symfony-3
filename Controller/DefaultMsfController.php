@@ -15,7 +15,6 @@ class DefaultMsfController extends Controller
      * @return \Symfony\Component\HttpFoundation\Response
      */
     public function indexAction(Request $request){
-
         $time = microtime();
 
         $msf = $this->container->get('msf')->create(MSFTesterType::class,"blog");

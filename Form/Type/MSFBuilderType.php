@@ -43,14 +43,11 @@ abstract class MSFBuilderType
             throw new MSFConfigurationNotFoundException($this->getMsfDataLoader()->getState(),'entity');
 
         $data = null;
-        try{
-            $undeserialized = $this->getUndeserializedMSFDataLoader();
-            if(array_key_exists($this->getState(), $undeserialized))
-                $data = $undeserialized[$this->getState()];
+        $undeserialized = $this->getUndeserializedMSFDataLoader();
 
-        }catch (\Exception $e){
-            throw new \Exception($e->getMessage());
-        }
+        if(array_key_exists($this->getState(), $undeserialized))
+            $data = $undeserialized[$this->getState()];
+
 
         if(! array_key_exists('action', $config)){
             $config['action'] = $this->getConfiguration()['__root'];
@@ -112,7 +109,7 @@ abstract class MSFBuilderType
 
     public final function addSubmitButton(array $options = [])
     {
-        $this->setConfigurationWith('__buttons_have_submit', $options);
+        $this->setConfigurationWith('__buttons_have_submit', true);
         $this->setConfigurationWith(self::ACTIONS_SUBMIT, $options);
         return $this;
     }
@@ -129,7 +126,7 @@ abstract class MSFBuilderType
      */
     public final function addCancelButton(array $options = [])
     {
-        $this->setConfigurationWith('__buttons_have_cancel', $options);
+        $this->setConfigurationWith('__buttons_have_cancel', true);
         $this->setConfigurationWith(self::ACTIONS_CANCEL, $options);
         return $this;
     }
@@ -140,7 +137,7 @@ abstract class MSFBuilderType
      */
     public final function addNextButton(array $options = [])
     {
-        $this->setConfigurationWith('__buttons_have_next', $options);
+        $this->setConfigurationWith('__buttons_have_next', true);
         $this->setConfigurationWith(self::ACTIONS_NEXT, $options);
         return $this;
     }
@@ -153,7 +150,7 @@ abstract class MSFBuilderType
      */
     public final function addPreviousButton(array $options = [])
     {
-        $this->setConfigurationWith('__buttons_have_previous', $options);
+        $this->setConfigurationWith('__buttons_have_previous', true);
         $this->setConfigurationWith(self::ACTIONS_PREVIOUS, $options);
         return $this;
     }
@@ -180,7 +177,7 @@ abstract class MSFBuilderType
         $stepsLinks = $this->getStepsWithLink($this->getConfiguration()['__root'],[],true);
 
         $buttonsToAdd = [];
-        foreach ($tmpButtons as $item){
+        foreach ($tmpButtons as $k => $item){
             if($item == self::ACTIONS_SUBMIT && $this->getConfiguration()['__buttons_have_submit']){
                 $buttonsToAdd[$item] = $this->getConfiguration()[$item];
             }
