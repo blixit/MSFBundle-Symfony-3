@@ -273,9 +273,15 @@ abstract class MSFBaseType
             //conversion from json to array
             $dataArray = $this->getMsfDataLoader()->getArrayData($this->getSerializer());
 
+        }catch (\Exception $e){
+            throw new \Exception("Failed to get array data from Msf Dataloader. \n".$e->getMessage());
+        }
+        try{
             foreach ($dataArray as $state => $config){
+                if(! isset($dataArray[$state]))
+                    continue;
                 //current form data
-                $datajson = json_encode(isset($dataArray[$state]) ? $dataArray[$state] : []);
+                $datajson = json_encode($dataArray[$state]);
                 $this->undeserializedMSFDataloader[$state] = $this->getSerializer()->deserialize($datajson,$this->configuration[$state]['entity'], 'json');
             }
         }catch (\Exception $e){

@@ -46,7 +46,7 @@ class MSFDataLoader
      */
     function __construct()
     {
-        $this->data = "{}"; //json object
+        $this->data = "[]"; //json object
     }
 
     /**

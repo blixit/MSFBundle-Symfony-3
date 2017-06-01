@@ -47,6 +47,8 @@ class MSFBaseTypeTest extends WebTestCase
 
     private $faketype;
 
+    private $serializer;
+
     public function setUp() {
 
         $client = $this->createClient();
@@ -82,16 +84,12 @@ class MSFBaseTypeTest extends WebTestCase
             ->method('create')
             ->willReturn($form);
 
-        //$serializerClass = $this->getMockClass(Serializer::class);
-
         $serializer = $this->getMockBuilder(Serializer::class)->disableOriginalConstructor()->getMock();
         $serializer->method('serialize')->withAnyParameters()->willReturn([]);
-        $serializer->method('deserialize')->withAnyParameters()->willReturn(new MSFDataLoader());
+        $serializer->method('deserialize')->withAnyParameters()->willReturn([]);
+        $this->serializer = $serializer;
 
         $entityManager = $this->getMockBuilder(EntityManager::class)->disableOriginalConstructor()->getMock();
-
-        $container = $this->getMockBuilder("Symfony\Component\DependencyInjection\ContainerInterface")
-            ->getMock();
 
         $this->msf = $this->getMockBuilder(MSFService::class)
             //->disableOriginalConstructor()
@@ -106,21 +104,12 @@ class MSFBaseTypeTest extends WebTestCase
             ->willReturn($session);
         $this->msf
             ->method('getSerializer')
-            ->willReturn($serializer);
+            ->willReturn($this->serializer);
 
         $this->msf
             ->method('create')
             ->with(FakeType::class)
             ->willReturn(new FakeType($this->msf,'fake_state'));
-
-        /*
-        $container->expects($this->any())
-            ->method("get")
-            ->with($this->equalTo('msf'))
-            ->will($this->returnValue($this->msf));
-
-            //new MSFService($requestStack, $router, $formFactory, $serializer, $entityManager, $session);
-        */
 
         $this->faketype = $this->msf->create(FakeType::class);
     }
@@ -166,6 +155,12 @@ class MSFBaseTypeTest extends WebTestCase
     }
 
     public function testgetUndeserializedMSFDataLoader(){
+        $expected = [
+            'fake_stat' => new \stdClass()
+        ];
+
+        $this->serializer->method('deserialize')->withAnyParameters()->willReturn($expected);
+
         $faketype = $this->faketype;
 
         $undeserialized = $faketype->getUndeserializedMSFDataLoader();
@@ -173,9 +168,7 @@ class MSFBaseTypeTest extends WebTestCase
 
         try{
             //should file since fake_state store a FakeType object
-            $faketype->getMsfDataLoader()->setArrayData([
-                'fake_stat'=>new \stdClass()
-            ],$this->msf->getSerializer());
+            $faketype->getMsfDataLoader()->setArrayData($expected,$this->msf->getSerializer());
 
             $undeserialized = $faketype->getUndeserializedMSFDataLoader();
         }catch (\Exception $e){
