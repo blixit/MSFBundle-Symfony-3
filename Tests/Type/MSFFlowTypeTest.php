@@ -11,6 +11,8 @@ namespace Blixit\MSFBundle\Tests\Form\Type;
 
 use Blixit\MSFBundle\Core\MSFService;
 use Blixit\MSFBundle\Entity\MSFDataLoader;
+use Blixit\MSFBundle\Exception\MSFConfigurationNotFoundException;
+use Blixit\MSFBundle\Exception\MSFTransitionBadReturnTypeException;
 use Blixit\MSFBundle\Form\Type\MSFFlowType;
 use MyProject\Proxies\__CG__\stdClass;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -68,24 +70,31 @@ class MSFFlowTypeTest extends WebTestCase
      */
     private $serializer;
 
+    /**
+     * @var Router
+     */
+    private $router;
+
+    /**
+     * @var FakeTypeFlow
+     */
     private $faketype;
 
     private $expected;
     private $client;
 
-    /**
-     * Mock all dependencies
-     * @param $client
-     */
-    private function mockItAndCreate($client){
-        $this->mockIt($client);
+    private function mockCreateMsf(){
         $this->msf
             ->method('create')
             ->with(FakeTypeFlow::class)
             ->willReturn(new FakeTypeFlow($this->msf,'fake_state'));
     }
 
-    private function mockIt($client){
+    /**
+     * Mock all dependencies
+     * @param $client
+     */
+    private function mockDependencies($client){
 
         $request = $client->getRequest();
         $session = $client->getRequest()->getSession();
@@ -95,8 +104,9 @@ class MSFFlowTypeTest extends WebTestCase
 
         $router = $this->getMockBuilder(Router::class)
             ->disableOriginalConstructor()
-            ->setMethods(array('create'))
+            ->setMethods(array('generate'))
             ->getMock();
+        $this->router = $router;
 
 
         $formFactory = $this->getMockBuilder(FormFactory::class)->disableOriginalConstructor()->getMock();
@@ -134,8 +144,22 @@ class MSFFlowTypeTest extends WebTestCase
         $this->msf
             ->method('getSerializer')
             ->willReturn($this->serializer);
+        $this->msf
+            ->method('getRouter')
+            ->willReturn($this->router);
     }
 
+    private function mockSetSimpleFakeType($createMSF = true){
+
+        $this->mockDependencies($this->client);
+        $this->serializer->method('deserialize')->withAnyParameters()->willReturn([]);
+        $this->serializer->method('serialize')->willReturn(json_encode([]));
+        if($createMSF){
+            $this->mockCreateMsf();
+            return $this->msf->create(FakeTypeFlow::class,'fake_state');
+        }
+        return null;
+    }
     /**
      * Setup test
      */
@@ -149,10 +173,94 @@ class MSFFlowTypeTest extends WebTestCase
         $this->client->request('POST','/msfbundle',['parameters']);
     }
 
+    public function testgetCancelRedirectionPage(){
+        $this->mockSetSimpleFakeType(false);
+        $this->router->method('generate')->with('FAKEROOT')->willReturn("http://point.fr?__msf_nvg=&__msf_state=testing");
+        $this->msf
+            ->method('getRouter')
+            ->willReturn($this->router);
+
+        $this->mockCreateMsf();
+        $faketype = $this->msf->create(FakeTypeFlow::class,'fake_state');
+
+
+        $expectedOnString = "__msf_state";
+        $expectedOnString2 = "__msf_nvg";
+        $url = $faketype->getCancelRedirectionPage('fake_state');
+
+        $this->assertContains($expectedOnString,$url);
+        $this->assertContains($expectedOnString2,$url);
+
+        $expectedOnNonString = $faketype->getConfiguration()['__on_cancel']['redirection'];
+        $notAString = 15;
+        $url = $faketype->getCancelRedirectionPage($notAString);
+
+        $this->assertSame($expectedOnNonString,$url);
+
+    }
+
+    public function testFoundPages(){
+        $faketype = $this->mockSetSimpleFakeType();
+
+        $faketype->setNextPage("newpage");
+        $this->assertSame("newpage",$faketype->getNextPage());
+
+        $faketype->setPreviousPage("newpage");
+        $this->assertSame("newpage",$faketype->getPreviousPage());
+
+        $faketype->setCancelPage("newpage");
+        $this->assertSame("newpage",$faketype->getCancelPage());
+    }
+
+    public function testNotFoundPages(){
+
+        $faketype = $this->mockSetSimpleFakeType();
+        $faketype->setConfigurationWith($faketype->getState(),[]);
+
+        //NEXT
+        try{
+            $faketype->getNextPage();
+        }catch (\Exception $e){
+            $this->assertInstanceOf(MSFConfigurationNotFoundException::class,$e);
+        }
+        try{
+            $notAString = 15;
+            $faketype->setNextPage($notAString);
+        }catch (\Exception $e){
+            $this->assertInstanceOf(MSFTransitionBadReturnTypeException::class,$e);
+        }
+
+        //Previous
+        try{
+            $faketype->getPreviousPage();
+        }catch (\Exception $e){
+            $this->assertInstanceOf(MSFConfigurationNotFoundException::class,$e);
+        }
+        try{
+            $notAString = 15;
+            $faketype->setPreviousPage($notAString);
+        }catch (\Exception $e){
+            $this->assertInstanceOf(MSFTransitionBadReturnTypeException::class,$e);
+        }
+
+        //cancel
+        try{
+            $faketype->getCancelPage();
+        }catch (\Exception $e){
+            $this->assertInstanceOf(MSFConfigurationNotFoundException::class,$e);
+        }
+        try{
+            $notAString = 15;
+            $faketype->setCancelPage($notAString);
+        }catch (\Exception $e){
+            $this->assertInstanceOf(MSFTransitionBadReturnTypeException::class,$e);
+        }
+
+    }
 
     public function testIsAvailable()
     {
-        $this->mockIt($this->client);
+        $this->mockDependencies($this->client);
 
         $expected = [
             'stateToTest' => json_encode(['name'=>'blixit'])

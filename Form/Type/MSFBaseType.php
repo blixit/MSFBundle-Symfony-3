@@ -233,14 +233,9 @@ abstract class MSFBaseType
      */
 
     public function getLocalConfiguration(){
-        // To prevent useless read actions on configuration array
-        if(isset($this->localConfiguration)){
-            return $this->localConfiguration;
-        }
 
         try{
-            $this->localConfiguration = $this->configuration[$this->msfDataLoader->getState()];
-            return $this->localConfiguration;
+            return $this->configuration[$this->msfDataLoader->getState()];
         }catch (\Exception $e){
             throw new \Exception("Trying to access a non configured state");
         }
@@ -253,7 +248,6 @@ abstract class MSFBaseType
     }
 
     public function resetLocalConfiguration(){
-        $this->localConfiguration = null;
         return $this;
     }
 
